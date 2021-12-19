@@ -36,21 +36,22 @@ int rdsint = 17;
 // LED pin number
 int ledpin = -1;
 
-mmr70_data_t mmr70;
+mmr70_data_t mmr70[32];
+IOexpander_data_t IOexpander[4];
 
-static cfg_t *cfg;
+static cfg_t *cfg, *cfg_transmitter, *cfg_IOexpander;
 static volatile int run = 1;
 static int start_daemon = 1;
 
 int main(int argc, char **argv)
 {
 	//Check if user == root
-	if(geteuid() != 0)
+/*	if(geteuid() != 0)
 	{
 	  puts("Please run this software as root!");
 	  exit(EXIT_FAILURE);
 	}
-
+*/
 	// check for non-daemon mode for debugging
 	for(int i = 1; i < argc; i++) {
 		if (str_is(argv[i], "nodaemon")) {
@@ -97,35 +98,53 @@ int main(int argc, char **argv)
 		openlog(argv[0],LOG_NOWAIT|LOG_PID,LOG_USER);
 	}
 
-	//Read configuration file
+//Read configuration file
+	cfg_opt_t transmitter_opts[] =
+		{
+			CFG_STR_LIST("transmitter", "{1}", CFGF_NONE),
+			CFG_INT("frequency", 99800, CFGF_NONE),
+			CFG_BOOL("stereo", 1, CFGF_NONE),
+			CFG_BOOL("rdsenable", 1, CFGF_NONE),
+			CFG_BOOL("poweron", 1, CFGF_NONE),
+			CFG_INT("txpower", 3, CFGF_NONE),
+			CFG_BOOL("gain", 0, CFGF_NONE),
+			CFG_INT("volume", 3, CFGF_NONE),
+			CFG_STR("rdsid", "", CFGF_NONE),
+			CFG_STR("rdstext", "", CFGF_NONE),
+			CFG_INT("rdspi", 0x8000, CFGF_NONE),
+			CFG_INT("rdspty", 10, CFGF_NONE),
+			CFG_INT("i2cmultiplexeraddress", 0x70, CFGF_NONE),
+			CFG_INT("i2cmultiplexerport", 0, CFGF_NONE),
+			CFG_STR("IOexpanderconfig", "1_Aports", CFGF_NONE),
+			CFG_INT("IOexpanderport",0, CFGF_NONE),
+			CFG_END()};
+
+	cfg_opt_t IOexpander_opts[]=
+		{	CFG_STR_LIST("IOexpander", "{1_Aports}", CFGF_NONE),
+			CFG_INT("IOexpanderaddress", 0x20, CFGF_NONE),
+			CFG_INT("IOinterruptpin", 17, CFGF_NONE),
+			CFG_END()};
+
 	cfg_opt_t opts[] =
-	{
-		CFG_INT("i2cbus", 1, CFGF_NONE),
-		CFG_INT("frequency", 99800, CFGF_NONE),
-		CFG_BOOL("stereo", 1, CFGF_NONE),
-		CFG_BOOL("rdsenable", 1, CFGF_NONE),
-		CFG_BOOL("poweron", 1, CFGF_NONE),
-		CFG_BOOL("tcpbindlocal", 1, CFGF_NONE),
-		CFG_INT("tcpport", 42516, CFGF_NONE),
-		CFG_INT("txpower", 3, CFGF_NONE),
-		CFG_BOOL("gain", 0, CFGF_NONE),
-		CFG_INT("volume", 3, CFGF_NONE),
-		CFG_INT("rdspin", 17, CFGF_NONE),
-		CFG_STR("rdsid", "", CFGF_NONE),
-		CFG_STR("rdstext", "", CFGF_NONE),
-		CFG_INT("ledpin", 27, CFGF_NONE),
-		CFG_END()
-	};
+		{
+			CFG_INT("i2cbus", 1, CFGF_NONE),
+			CFG_BOOL("tcpbindlocal", 1, CFGF_NONE),
+			CFG_INT("tcpport", 42516, CFGF_NONE),
+			CFG_INT("rdspin", 17, CFGF_NONE),
+			CFG_INT("ledpin", 27, CFGF_NONE),
+			CFG_SEC("transmitter", transmitter_opts, CFGF_TITLE | CFGF_MULTI),
+			CFG_SEC("IOexpander", IOexpander_opts, CFGF_TITLE | CFGF_MULTI),
+			CFG_END()};
 
 	cfg = cfg_init(opts, CFGF_NONE);
-	if (cfg_parse(cfg, "/etc/fmberry.conf") == CFG_PARSE_ERROR)
+	if (cfg_parse(cfg, "/home/pi/git/FMBerry/fmberry.conf") == CFG_PARSE_ERROR)
 		return 1;
 
 	// get LED pin number
 	int led = 1; // led state
 	ledpin = cfg_getint(cfg, "ledpin");
 	rdsint = cfg_getint(cfg, "rdspin");
-
+/*
 	// Init I2C bus and transmitter with initial frequency and state
 	if (ns741_init(cfg_getint(cfg, "i2cbus"), cfg_getint(cfg, "frequency")) == -1)
 	{
@@ -133,29 +152,56 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitter.\n");
-
+*/
 	int nfds;
 	struct pollfd  polls[2];
-
+/*
 	// open TCP listener socket, will exit() in case of error
 	int lst = ListenTCP(cfg_getint(cfg, "tcpport"));
 	polls[0].fd = lst;
 	polls[0].events = POLLIN;
 	nfds = 1;
+*/
+
+	// read IOexpander data from config
+	int nr_IOexpanders =  cfg_size(cfg, "IOexpander");
+	bzero(&IOexpander, sizeof(IOexpander));
+	for (int k=0; k < nr_IOexpanders; k++)
+	{
+		cfg_IOexpander = cfg_getnsec(cfg, "IOexpander", k);
+		strncpy(IOexpander[k].id, cfg_title(cfg_IOexpander), 12);
+		IOexpander[k].address = cfg_getint (cfg_IOexpander, "IOexpanderaddress");
+		IOexpander[k].interruptpin = cfg_getint (cfg_IOexpander, "IOinterruptpin");
+
+	}
 
 	// initialize data structure for 'status' command
+	int nr_transmitters = cfg_size(cfg, "transmitter");
+	int j;
 	bzero(&mmr70, sizeof(mmr70));
-	mmr70.frequency = cfg_getint(cfg, "frequency");
-	mmr70.power     = cfg_getbool(cfg, "poweron");
-	mmr70.txpower   = cfg_getint(cfg, "txpower");
-	mmr70.mute      = 0;
-	mmr70.gain      = cfg_getbool(cfg, "gain");
-	mmr70.volume    = cfg_getint(cfg, "volume");
-	mmr70.stereo    = cfg_getbool(cfg, "stereo");
-	mmr70.rds       = cfg_getbool(cfg, "rdsenable");
-	strncpy(mmr70.rdsid, cfg_getstr(cfg, "rdsid"), 8);
-	strncpy(mmr70.rdstext, cfg_getstr(cfg, "rdstext"), 64);
-
+	for(j = 0; j < nr_transmitters; j++)
+	{	cfg_transmitter = cfg_getnsec(cfg, "transmitter", j);
+		mmr70[j].frequency = cfg_getint(cfg_transmitter, "frequency");
+		mmr70[j].power = cfg_getbool(cfg_transmitter, "poweron");
+		mmr70[j].txpower = cfg_getint(cfg_transmitter, "txpower");
+		mmr70[j].mute = 0;
+		mmr70[j].gain = cfg_getbool(cfg_transmitter, "gain");
+		mmr70[j].volume = cfg_getint(cfg_transmitter, "volume");
+		mmr70[j].stereo = cfg_getbool(cfg_transmitter, "stereo");
+		mmr70[j].rds = cfg_getbool(cfg_transmitter, "rdsenable");
+		strncpy(mmr70[j].rdsid, cfg_getstr(cfg_transmitter, "rdsid"), 8);
+		strncpy(mmr70[j].rdstext, cfg_getstr(cfg_transmitter, "rdstext"), 64);
+		mmr70[j].rdspi = cfg_getint(cfg_transmitter, "rdspi");
+		mmr70[j].rdspty = cfg_getint(cfg_transmitter, "rdspty");
+		mmr70[j].i2cmultiplexeraddress = cfg_getint(cfg_transmitter, "i2cmultiplexeraddress");
+		mmr70[j].i2cmultiplexerport = cfg_getint(cfg_transmitter, "i2cmultiplexerport");
+		strncpy(mmr70[j].IOexpanderconfig, cfg_getstr(cfg_transmitter, "IOexpanderconfig"), 12);
+		char ttest[12];
+		strncpy (ttest, mmr70[j].IOexpanderconfig, 12);
+		mmr70[j].IOexpanderport = cfg_getint(cfg_transmitter, "IOexpanderport");
+	}
+	
+/*	
 	// apply configuration parameters
 	ns741_txpwr(mmr70.txpower);
 	ns741_mute(mmr70.mute);
@@ -230,10 +276,10 @@ int main(int argc, char **argv)
 
 int ListenTCP(uint16_t port)
 {
-	/* Socket erstellen - TCP, IPv4, keine Optionen */
+	// Socket erstellen - TCP, IPv4, keine Optionen 
 	int lsd = socket(AF_INET, SOCK_STREAM, 0);
 
-	/* IPv4, Port: 1111, jede IP-Adresse akzeptieren */
+	// IPv4, Port: 1111, jede IP-Adresse akzeptieren 
 	struct sockaddr_in saddr;
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(port);
@@ -254,9 +300,9 @@ int ListenTCP(uint16_t port)
 
 	int rtn = setsockopt(lsd, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, optLen);
 
-	//assert(rtn == 0);   /* this is optional */
+	//assert(rtn == 0);   // this is optional 
 
-	/* Socket an Port binden */
+	// Socket an Port binden 
 	if (bind(lsd, (struct sockaddr*) &saddr, sizeof(saddr)) < 0) {
   		//whoops. Could not listen
   		syslog(LOG_ERR, "Could not bind to TCP port! Terminated.\n");
@@ -264,7 +310,7 @@ int ListenTCP(uint16_t port)
 	 }
 
   	syslog(LOG_NOTICE, "Successfully started daemon\n");
-	/* Auf Socket horchen (Listen) */
+	// Auf Socket horchen (Listen) 
 	listen(lsd, 10);
 
 	return lsd;
@@ -275,13 +321,13 @@ static float txpower[4] = { 0.5, 0.8, 1.0, 2.0 };
 
 int ProcessTCP(int sock, mmr70_data_t *pdata)
 {
-	/* Puffer und Strukturen anlegen */
+	// Puffer und Strukturen anlegen
 	struct sockaddr_in clientaddr;
 	socklen_t clen = sizeof(clientaddr);
 	char buffer[512];
 	bzero(buffer, sizeof(buffer));
 
-	/* Auf Verbindung warten, bei Verbindung Connected-Socket erstellen */
+	// Auf Verbindung warten, bei Verbindung Connected-Socket erstellen 
 	int csd = accept(sock, (struct sockaddr *)&clientaddr, &clen);
 
 	struct pollfd  pol;
@@ -462,7 +508,7 @@ int ProcessTCP(int sock, mmr70_data_t *pdata)
 	} while(0);
 
 	close(csd);
-	return 0;
+*/	return 0;
 }
 
 // helper string compare functions
@@ -485,4 +531,5 @@ int str_is_arg(const char *str, const char *is, const char **arg)
 		return 1;
 	}
 	return 0;
+
 }

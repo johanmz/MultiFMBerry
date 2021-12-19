@@ -32,9 +32,23 @@ typedef struct _mmr70_data
 	int rds;
 	char rdsid[10];   // max length of id is 8, but need spare null for printing
 	char rdstext[66]; // same here, max 64 chars, 2 nulls are extra (need only 1, but I do not like odd numbers)
+	int rdspi;
+	int rdspty;
+	int i2cmultiplexeraddress;
+	int i2cmultiplexerport;
+	char IOexpanderconfig[12];
+	int IOexpanderport;
 }mmr70_data_t;
+extern mmr70_data_t mmr70[];
 
-extern mmr70_data_t mmr70;
+typedef struct _IOexpander_data
+{
+	char id[12];
+	int address;
+	int interruptpin;
+}IOexpander_data_t;
+extern IOexpander_data_t IOexpander[];
+
 
 int main(int argc, char **argv);
 
