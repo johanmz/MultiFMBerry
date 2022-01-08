@@ -29,6 +29,8 @@
 #include <netinet/in.h>
 
 #define RPI_REVISION RPI_REV2
+#define MAXTRANSMITTERS 16
+#define MAXIOEXPANDERS 4
 
 // RDS interrupt pin
 int rdsint = 17;
@@ -36,8 +38,8 @@ int rdsint = 17;
 // LED pin number
 int ledpin = -1;
 
-mmr70_data_t mmr70[32];
-IOexpander_data_t IOexpander[4];
+mmr70_data_t mmr70[MAXTRANSMITTERS];
+IOexpander_data_t IOexpander[MAXIOEXPANDERS];
 
 static cfg_t *cfg, *cfg_transmitter, *cfg_IOexpander;
 static volatile int run = 1;

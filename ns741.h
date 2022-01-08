@@ -23,16 +23,18 @@
 #define NS741_MIN_FREQ   8750 //  87.50 MHz
 #define NS741_MAX_FREQ  10800 // 108.00 MHz
 #define NS741_FREQ_STEP     5 //    .05 MHz
+#define MAXNRTRANSMITTERS  16 
+
 
 int  ns741_init(uint8_t i2c_bus, uint32_t f_khz);
-void ns741_set_frequency(uint32_t f_khz);
-void ns741_power(uint8_t on); // radio on/off
-void ns741_mute(uint8_t on); // mute on/off
+void ns741_set_frequency(uint8_t transmitter, uint32_t f_khz);
+void ns741_power(uint8_t transmitter, uint8_t on); // radio on/off
+void ns741_mute(uint8_t transmitter, uint8_t on); // mute on/off
 // strength 0 to 3, corresponding output: 0.5mW, 0.8mW, 1.0mW, 2.0mW
-void ns741_txpwr(uint8_t strength);
-void ns741_volume(uint8_t gain); // output gain 0-6, or -9dB to +9db, 3dB step
-void ns741_input_gain(uint8_t on); // input audio gain -9dB on/off
-void ns741_stereo(uint8_t on); // stereo on/off
+void ns741_txpwr(uint8_t transmitter, uint8_t strength);
+void ns741_volume(uint8_t transmitter, uint8_t gain); // output gain 0-6, or -9dB to +9db, 3dB step
+void ns741_input_gain(uint8_t transmitter, uint8_t on); // input audio gain -9dB on/off
+void ns741_stereo(uint8_t transmitter, uint8_t on); // stereo on/off
 
 void ns741_rds(uint8_t on); // RDS on/off
 void ns741_rds_cp(uint8_t cp); // RDS_CP flag, third block type: C (cp=0) or C' (cp=1)

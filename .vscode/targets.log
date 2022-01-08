@@ -1,0 +1,350 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+# GNU Make 4.3
+# Built for arm-unknown-linux-gnueabihf
+# Copyright (C) 1988-2020 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Sat Jan  8 16:47:31 2022
+
+# Variables
+
+# environment
+LC_ALL = C
+# environment
+VSCODE_INJECT_NODE_MODULE_LOOKUP_PATH = /home/pi/.vscode-server/bin/899d46d82c4c95423fb7e10e68eba52050e30ba3/remote/node_modules
+# environment
+VSCODE_CWD = /home/pi
+# makefile (from 'Makefile', line 8)
+LIBS = -lconfuse
+# environment
+TEXTDOMAIN = Linux-PAM
+# default
+MAKE_COMMAND := make
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# default
+.VARIABLES := 
+# environment
+PWD = /home/pi/git/FMBerry
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# environment
+XDG_DATA_DIRS = /usr/local/share:/usr/share:/var/lib/snapd/desktop
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# environment
+VSCODE_LOG_STACK = false
+# automatic
+%F = $(notdir $%)
+# environment
+LANG = C
+# default
+.LOADED := 
+# default
+.INCLUDE_DIRS = /usr/local/include /usr/include /usr/include
+# makefile
+MAKEFLAGS = pqrR
+# makefile
+CURDIR := /home/pi/git/FMBerry
+# environment
+VSCODE_PIPE_LOGGING = true
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+MFLAGS = -pqrR
+# default
+.SHELLFLAGS := -c
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# makefile (from 'Makefile', line 1)
+MAKEFILE_LIST := Makefile
+# automatic
+@F = $(notdir $@)
+# environment
+VSCODE_VERBOSE_LOGGING = true
+# environment
+XDG_SESSION_TYPE = tty
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# automatic
+*F = $(notdir $*)
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en","availableLanguages":{}}
+# default
+MAKE_HOST := arm-unknown-linux-gnueabihf
+# makefile (from 'Makefile', line 7)
+OBJS = fmberryd.o ns741.o i2c.o rpi_pin.o
+# makefile
+SHELL = /bin/sh
+# default
+MAKECMDGOALS := all
+# environment
+SHLVL = 0
+# environment
+MAKELEVEL := 0
+# default
+MAKE = $(MAKE_COMMAND)
+# environment
+PATH = /home/pi/.vscode-server/bin/899d46d82c4c95423fb7e10e68eba52050e30ba3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games:/snap/bin
+# default
+MAKEFILES := 
+# environment
+MOTD_SHOWN = pam
+# automatic
+^F = $(notdir $^)
+# environment
+SSH_CLIENT = 192.168.4.65 50813 22
+# environment
+VSCODE_LOG_NATIVE = false
+# automatic
+?F = $(notdir $?)
+# environment
+LS_COLORS = 
+# automatic
++F = $(notdir $+)
+# 'override' directive
+GNUMAKEFLAGS := 
+# environment
+BROWSER = /home/pi/.vscode-server/bin/899d46d82c4c95423fb7e10e68eba52050e30ba3/bin/helpers/browser.sh
+# environment
+LOGNAME = pi
+# makefile
+.DEFAULT_GOAL := all
+# makefile (from 'Makefile', line 6)
+TARGET_DAEMON = fmberryd
+# environment
+USER = pi
+# default
+MAKE_VERSION := 4.3
+# environment
+VSCODE_EXTHOST_WILL_SEND_SOCKET = true
+# environment
+VSCODE_AGENT_FOLDER = /home/pi/.vscode-server
+# environment
+_ = /home/pi/.vscode-server/bin/899d46d82c4c95423fb7e10e68eba52050e30ba3/node
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# makefile (from 'Makefile', line 4)
+CFLAGS = -g -std=gnu99
+# environment
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-6ee36ce5-4fd6-4751-ac3e-3442388be158.sock
+# environment
+XDG_SESSION_CLASS = user
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/server/remoteExtensionHostProcess
+# environment
+HOME = /home/pi
+# environment
+XDG_SESSION_ID = 6
+# default
+.RECIPEPREFIX := 
+# automatic
+<F = $(notdir $<)
+# default
+SUFFIXES := 
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink load
+# environment
+SSH_CONNECTION = 192.168.4.65 50813 192.168.4.35 22
+# variable set hash-table stats:
+# Load=73/1024=7%, Rehash=0, Collisions=3/106=3%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 45826, inode 379412): 28 files, no impossibilities.
+
+# 28 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+%.o: %.c %.h Makefile
+#  recipe to execute (from 'Makefile', line 19):
+	$(CC) -c $(CFLAGS) $< -o $@
+	
+
+# 1 implicit rules, 0 (0.0%) terminal.
+# Files
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-18 17:44:58.130128706
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+i2c.c:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-18 17:44:58.130128706
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+rpi_pin.c:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-18 17:44:58.130128706
+#  File has been updated.
+#  Successfully updated.
+
+uninstall:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 29):
+	$(RM) /usr/local/bin/fmberryd
+	$(RM) /usr/local/bin/ctlfmberry
+	$(RM) /etc/init.d/fmberry
+
+clean:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 16):
+	$(RM) -f *.o $(TARGET_DAEMON)
+
+# Not a target:
+fmberryd.h:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-19 22:17:58.070022223
+#  File has been updated.
+#  Successfully updated.
+
+i2c.o: i2c.c i2c.h Makefile
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'i2c'
+#  Last modified 2021-12-19 17:59:51.149060052
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 19):
+	$(CC) -c $(CFLAGS) $< -o $@
+	
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+rpi_pin.o: rpi_pin.c rpi_pin.h Makefile
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'rpi_pin'
+#  Last modified 2021-12-19 17:59:51.289059583
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 19):
+	$(CC) -c $(CFLAGS) $< -o $@
+	
+
+all: fmberryd
+#  Command line target.
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+ns741.c:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-18 17:44:58.130128706
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+rpi_pin.h:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-18 17:44:58.130128706
+#  File has been updated.
+#  Successfully updated.
+
+fmberryd: fmberryd.o ns741.o i2c.o rpi_pin.o
+#  Implicit rule search has not been done.
+#  Last modified 2021-12-19 22:17:58.610024619
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 13):
+	$(CC) $(CFLAGS) -o $(TARGET_DAEMON) $(OBJS) $(LIBS)
+
+install:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 22):
+	install -m 644 fmberry.conf /etc/fmberry.conf
+	install fmberryd /usr/local/bin
+	install ctlfmberry /usr/local/bin
+	install fmberry /etc/init.d
+	update-rc.d fmberry defaults 
+
+fmberryd.o: fmberryd.c fmberryd.h Makefile
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'fmberryd'
+#  Last modified 2021-12-19 22:17:58.52002422
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 19):
+	$(CC) -c $(CFLAGS) $< -o $@
+	
+
+# Not a target:
+i2c.h:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-18 17:44:58.130128706
+#  File has been updated.
+#  Successfully updated.
+
+ns741.o: ns741.c ns741.h Makefile
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'ns741'
+#  Last modified 2021-12-19 17:59:51.03906042
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 19):
+	$(CC) -c $(CFLAGS) $< -o $@
+	
+
+# Not a target:
+ns741.h:
+#  Implicit rule search has been done.
+ 
+#  Last modified 2021-12-18 17:44:58.130128706
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+fmberryd.c:
+#  Implicit rule search has been done.
+#  Last modified 2021-12-19 22:17:35.389921546
+#  File has been updated.
+#  Successfully updated.
+
+# files hash-table stats:
+# Load=20/1024=2%, Rehash=0, Collisions=3/65=5%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 42 / storage = 360 B / avg = 8 B
+# current buf: size = 8174 B / used = 360 B / count = 42 / avg = 8 B
+
+# strcache performance: lookups = 84 / hit rate = 50%
+# hash-table stats:
+# Load=42/8192=1%, Rehash=0, Collisions=1/84=1%
+# Finished Make data base on Sat Jan  8 16:47:31 2022
+
+ 
