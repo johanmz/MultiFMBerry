@@ -111,12 +111,13 @@ void ns741_init_reg(uint8_t nr_transmitters)
 
 }
 
-// initialise i2c bus
+// initialise i2c bus for the transmitters
 int ns741_init_i2c (uint8_t bus)
 {
 	i2cbus = i2c_init(bus, address);
 	if ((i2cbus == -1) || (i2c_send(i2cbus, 0x00, 0x00) == -1))
 		return -1;
+	//toevoegen: loop om elke transmitter te selecteren en dan aan te zetten
 
 	return 0;
 }
@@ -194,7 +195,7 @@ void ns741_mute(uint8_t transmitter, uint8_t on)
 	return;
 }
 
-void ns741_txpwr(uint8_t transmitter, int8_t strength)
+void ns741_txpwr(uint8_t transmitter, uint8_t strength)
 {
 	uint8_t reg = ns741_reg[transmitter][2];
 	// clear RF power bits: set power level 0 - 0.5mW

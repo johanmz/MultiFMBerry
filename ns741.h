@@ -26,7 +26,9 @@
 #define MAXNRTRANSMITTERS  16 
 
 
-int  ns741_init(uint8_t i2c_bus, uint32_t f_khz);
+//int  ns741_init(uint8_t i2c_bus, uint32_t f_khz);
+void ns741_init_reg(uint8_t nr_transmitters); // set the N741 register map for every transmitter
+int ns741_init_i2c (uint8_t bus); // initialise i2c bus for the transmitters
 void ns741_set_frequency(uint8_t transmitter, uint32_t f_khz);
 void ns741_power(uint8_t transmitter, uint8_t on); // radio on/off
 void ns741_mute(uint8_t transmitter, uint8_t on); // mute on/off
@@ -35,9 +37,8 @@ void ns741_txpwr(uint8_t transmitter, uint8_t strength);
 void ns741_volume(uint8_t transmitter, uint8_t gain); // output gain 0-6, or -9dB to +9db, 3dB step
 void ns741_input_gain(uint8_t transmitter, uint8_t on); // input audio gain -9dB on/off
 void ns741_stereo(uint8_t transmitter, uint8_t on); // stereo on/off
-
-void ns741_rds(uint8_t on); // RDS on/off
-void ns741_rds_cp(uint8_t cp); // RDS_CP flag, third block type: C (cp=0) or C' (cp=1)
+void ns741_rds(uint8_t transmitter, uint8_t on); // RDS on/off
+void ns741_rds_cp(uint8_t transmitter, uint8_t cp); // RDS_CP flag, third block type: C (cp=0) or C' (cp=1)
 void ns741_rds_set_progname(const char *text);
 void ns741_rds_set_rds_pi(uint16_t rdspi);
 void ns741_rds_set_rds_pty(uint8_t rdspty);

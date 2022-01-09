@@ -18,6 +18,7 @@
 #include "fmberryd.h"
 #include "rpi_pin.h"
 #include "ns741.h"
+#include "tca9548a.h"
 
 #include <poll.h>
 #include <stdlib.h>
@@ -27,10 +28,10 @@
 #include <confuse.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
+#include "defs.h"
 
 #define RPI_REVISION RPI_REV2
-#define MAXTRANSMITTERS 16
-#define MAXIOEXPANDERS 4
+
 
 // RDS interrupt pin
 int rdsint = 17;
@@ -40,6 +41,7 @@ int ledpin = -1;
 
 mmr70_data_t mmr70[MAXTRANSMITTERS];
 IOexpander_data_t IOexpander[MAXIOEXPANDERS];
+multiplexer_data_t multiplexer[MAXMULTIPLEXERS];
 
 static cfg_t *cfg, *cfg_transmitter, *cfg_IOexpander;
 static volatile int run = 1;
@@ -146,15 +148,7 @@ int main(int argc, char **argv)
 	int led = 1; // led state
 	ledpin = cfg_getint(cfg, "ledpin");
 	rdsint = cfg_getint(cfg, "rdspin");
-/*
-	// Init I2C bus and transmitter with initial frequency and state
-	if (ns741_init(cfg_getint(cfg, "i2cbus"), cfg_getint(cfg, "frequency")) == -1)
-	{
-		syslog(LOG_ERR, "Init failed! Double-check hardware and try again!\n");
-		exit(EXIT_FAILURE);
-	}
-	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitter.\n");
-*/
+
 	int nfds;
 	struct pollfd  polls[2];
 /*
@@ -170,39 +164,93 @@ int main(int argc, char **argv)
 	bzero(&IOexpander, sizeof(IOexpander));
 	for (int k=0; k < nr_IOexpanders; k++)
 	{
-		cfg_IOexpander = cfg_getnsec(cfg, "IOexpander", k);
+		cfg_IOexpander 				= cfg_getnsec(cfg, "IOexpander", k);
 		strncpy(IOexpander[k].id, cfg_title(cfg_IOexpander), 12);
-		IOexpander[k].address = cfg_getint (cfg_IOexpander, "IOexpanderaddress");
-		IOexpander[k].interruptpin = cfg_getint (cfg_IOexpander, "IOinterruptpin");
+		IOexpander[k].address 		= cfg_getint (cfg_IOexpander, "IOexpanderaddress");
+		IOexpander[k].interruptpin 	= cfg_getint (cfg_IOexpander, "IOinterruptpin");
 
 	}
 
 	// initialize data structure for 'status' command
 	int nr_transmitters = cfg_size(cfg, "transmitter");
-	int j;
 	bzero(&mmr70, sizeof(mmr70));
-	for(j = 0; j < nr_transmitters; j++)
-	{	cfg_transmitter = cfg_getnsec(cfg, "transmitter", j);
-		mmr70[j].frequency = cfg_getint(cfg_transmitter, "frequency");
-		mmr70[j].power = cfg_getbool(cfg_transmitter, "poweron");
-		mmr70[j].txpower = cfg_getint(cfg_transmitter, "txpower");
-		mmr70[j].mute = 0;
-		mmr70[j].gain = cfg_getbool(cfg_transmitter, "gain");
-		mmr70[j].volume = cfg_getint(cfg_transmitter, "volume");
-		mmr70[j].stereo = cfg_getbool(cfg_transmitter, "stereo");
-		mmr70[j].rds = cfg_getbool(cfg_transmitter, "rdsenable");
+	for (int j = 0; j < nr_transmitters; j++)
+	{	cfg_transmitter 			= cfg_getnsec(cfg, "transmitter", j);
+		mmr70[j].frequency 			= cfg_getint(cfg_transmitter, "frequency");
+		mmr70[j].power 				= cfg_getbool(cfg_transmitter, "poweron");
+		mmr70[j].txpower 			= cfg_getint(cfg_transmitter, "txpower");
+		mmr70[j].mute 				= 0;
+		mmr70[j].gain 				= cfg_getbool(cfg_transmitter, "gain");
+		mmr70[j].volume 			= cfg_getint(cfg_transmitter, "volume");
+		mmr70[j].stereo 			= cfg_getbool(cfg_transmitter, "stereo");
+		mmr70[j].rds 				= cfg_getbool(cfg_transmitter, "rdsenable");
 		strncpy(mmr70[j].rdsid, cfg_getstr(cfg_transmitter, "rdsid"), 8);
 		strncpy(mmr70[j].rdstext, cfg_getstr(cfg_transmitter, "rdstext"), 64);
-		mmr70[j].rdspi = cfg_getint(cfg_transmitter, "rdspi");
-		mmr70[j].rdspty = cfg_getint(cfg_transmitter, "rdspty");
-		mmr70[j].i2cmultiplexeraddress = cfg_getint(cfg_transmitter, "i2cmultiplexeraddress");
-		mmr70[j].i2cmultiplexerport = cfg_getint(cfg_transmitter, "i2cmultiplexerport");
+		mmr70[j].rdspi 				= cfg_getint(cfg_transmitter, "rdspi");
+		mmr70[j].rdspty 			= cfg_getint(cfg_transmitter, "rdspty");
+		mmr70[j].i2c_mplexaddress 	= cfg_getint(cfg_transmitter, "i2cmultiplexeraddress");
+		mmr70[j].i2c_mplexport	 	= cfg_getint(cfg_transmitter, "i2cmultiplexerport");
 		strncpy(mmr70[j].IOexpanderconfig, cfg_getstr(cfg_transmitter, "IOexpanderconfig"), 12);
-		char ttest[12];
-		strncpy (ttest, mmr70[j].IOexpanderconfig, 12);
-		mmr70[j].IOexpanderport = cfg_getint(cfg_transmitter, "IOexpanderport");
+		mmr70[j].IOexpanderport 	= cfg_getint(cfg_transmitter, "IOexpanderport");
 	}
 	
+	// build up index for the multiplexers for initialisation of the i2cbus
+	// use the index number for each multiplexer also for 
+	int mplex_found;
+	int mplexindex=-1;
+	bzero(&multiplexer, sizeof(multiplexer));
+	for (int j = 0; j < nr_transmitters; j++)
+	{
+		mplex_found = -1;
+		for (int k=0; k < MAXMULTIPLEXERS; k++)
+		{
+			if (multiplexer[k].address == mmr70[j].i2c_mplexaddress)
+			{	
+				mplex_found = k;
+				break;
+			}
+		}
+		if (mplex_found != -1)
+			mmr70[j].i2c_mplexindex = mplex_found;
+		else
+		{
+			mplexindex++;
+			multiplexer[mplexindex].address=mmr70[j].i2c_mplexaddress;
+			mmr70[j].i2c_mplexindex = mplexindex;
+		}
+	}
+
+	// initialize the ns741 register map for all transmitters
+	ns741_init_reg(nr_transmitters);
+
+	// initialize all tca9548a multiplexer i2c busses
+	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus")==-1))
+	{
+		syslog(LOG_ERR, "Init of TCA9548A multiplexer(s) failed! Double-check hardware and .conf and try again!\n");
+		exit(EXIT_FAILURE);
+	}
+	syslog(LOG_NOTICE, "Successfully initialized i2c bus for TCA9548A multiplexer(s).\n");
+
+	// init I2C bus and transmitters with initial frequency and state
+	if (ns741_init_i2c(cfg_getint(cfg, "i2cbus") == -1))
+	{
+		syslog(LOG_ERR, "Init failed! Double-check hardware and try again!\n");
+		exit(EXIT_FAILURE);
+	}
+	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitters.\n");
+
+
+/*
+	// Init I2C bus and transmitter with initial frequency and state
+	if (ns741_init(cfg_getint(cfg, "i2cbus"), cfg_getint(cfg, "frequency")) == -1)
+	{
+		syslog(LOG_ERR, "Init failed! Double-check hardware and try again!\n");
+		exit(EXIT_FAILURE);
+	}
+	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitter.\n");
+*/
+
+
 /*	
 	// apply configuration parameters
 	ns741_txpwr(mmr70.txpower);
