@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Jan  8 16:47:31 2022
+# Make data base, printed on Sun Jan  9 17:29:46 2022
 
 # Variables
 
@@ -83,7 +83,7 @@ VSCODE_NLS_CONFIG = {"locale":"en","availableLanguages":{}}
 # default
 MAKE_HOST := arm-unknown-linux-gnueabihf
 # makefile (from 'Makefile', line 7)
-OBJS = fmberryd.o ns741.o i2c.o rpi_pin.o
+OBJS = fmberryd.o ns741.o i2c.o rpi_pin.o tca9548a.o defs.o
 # makefile
 SHELL = /bin/sh
 # default
@@ -157,7 +157,7 @@ SUFFIXES :=
 # environment
 SSH_CONNECTION = 192.168.4.65 50813 192.168.4.35 22
 # variable set hash-table stats:
-# Load=73/1024=7%, Rehash=0, Collisions=3/106=3%
+# Load=73/1024=7%, Rehash=0, Collisions=3/111=3%
 
 # Pattern-specific Variable Values
 
@@ -165,9 +165,9 @@ SSH_CONNECTION = 192.168.4.65 50813 192.168.4.35 22
 
 # Directories
 
-# . (device 45826, inode 379412): 28 files, no impossibilities.
+# . (device 45826, inode 379412): 31 files, no impossibilities.
 
-# 28 files, no impossibilities in 1 directories.
+# 31 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -180,25 +180,23 @@ SSH_CONNECTION = 192.168.4.65 50813 192.168.4.35 22
 # Files
 
 # Not a target:
+tca9548a.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2021-12-18 17:44:58.130128706
+#  Last modified 2022-01-09 17:29:40.326260925
 #  File has been updated.
 #  Successfully updated.
 
 # Not a target:
-i2c.c:
-#  Implicit rule search has been done.
-#  Last modified 2021-12-18 17:44:58.130128706
-#  File has been updated.
-#  Successfully updated.
-
-# Not a target:
-rpi_pin.c:
-#  Implicit rule search has been done.
-#  Last modified 2021-12-18 17:44:58.130128706
-#  File has been updated.
-#  Successfully updated.
+defs.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
 
 uninstall:
 #  Implicit rule search has not been done.
@@ -223,15 +221,11 @@ fmberryd.h:
 #  File has been updated.
 #  Successfully updated.
 
-i2c.o: i2c.c i2c.h Makefile
-#  Implicit rule search has been done.
-#  Implicit/static pattern stem: 'i2c'
-#  Last modified 2021-12-19 17:59:51.149060052
-#  File has been updated.
-#  Successfully updated.
-#  recipe to execute (from 'Makefile', line 19):
-	$(CC) -c $(CFLAGS) $< -o $@
-	
+# Not a target:
+i2c.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
 
 # Not a target:
 .DEFAULT:
@@ -239,42 +233,28 @@ i2c.o: i2c.c i2c.h Makefile
 #  Modification time never checked.
 #  File has not been updated.
 
-rpi_pin.o: rpi_pin.c rpi_pin.h Makefile
-#  Implicit rule search has been done.
-#  Implicit/static pattern stem: 'rpi_pin'
-#  Last modified 2021-12-19 17:59:51.289059583
-#  File has been updated.
-#  Successfully updated.
-#  recipe to execute (from 'Makefile', line 19):
-	$(CC) -c $(CFLAGS) $< -o $@
-	
+# Not a target:
+rpi_pin.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
 
 all: fmberryd
 #  Command line target.
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has been updated.
-#  Successfully updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/5=0%
 
-# Not a target:
-ns741.c:
-#  Implicit rule search has been done.
-#  Last modified 2021-12-18 17:44:58.130128706
-#  File has been updated.
-#  Successfully updated.
-
-# Not a target:
-rpi_pin.h:
-#  Implicit rule search has been done.
-#  Last modified 2021-12-18 17:44:58.130128706
-#  File has been updated.
-#  Successfully updated.
-
-fmberryd: fmberryd.o ns741.o i2c.o rpi_pin.o
+fmberryd: fmberryd.o ns741.o i2c.o rpi_pin.o tca9548a.o defs.o
 #  Implicit rule search has not been done.
 #  Last modified 2021-12-19 22:17:58.610024619
 #  File has been updated.
-#  Successfully updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/5=0%
 #  recipe to execute (from 'Makefile', line 13):
 	$(CC) $(CFLAGS) -o $(TARGET_DAEMON) $(OBJS) $(LIBS)
 
@@ -294,57 +274,56 @@ fmberryd.o: fmberryd.c fmberryd.h Makefile
 #  Implicit/static pattern stem: 'fmberryd'
 #  Last modified 2021-12-19 22:17:58.52002422
 #  File has been updated.
-#  Successfully updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := fmberryd.o
+# automatic
+# * := fmberryd
+# automatic
+# < := fmberryd.c
+# automatic
+# + := fmberryd.c fmberryd.h Makefile
+# automatic
+# % := 
+# automatic
+# ^ := fmberryd.c fmberryd.h Makefile
+# automatic
+# ? := fmberryd.c Makefile
+# automatic
+# | := 
+# variable set hash-table stats:
+# Load=8/32=25%, Rehash=0, Collisions=2/15=13%
 #  recipe to execute (from 'Makefile', line 19):
 	$(CC) -c $(CFLAGS) $< -o $@
 	
 
 # Not a target:
-i2c.h:
-#  Implicit rule search has been done.
-#  Last modified 2021-12-18 17:44:58.130128706
-#  File has been updated.
-#  Successfully updated.
-
-ns741.o: ns741.c ns741.h Makefile
-#  Implicit rule search has been done.
-#  Implicit/static pattern stem: 'ns741'
-#  Last modified 2021-12-19 17:59:51.03906042
-#  File has been updated.
-#  Successfully updated.
-#  recipe to execute (from 'Makefile', line 19):
-	$(CC) -c $(CFLAGS) $< -o $@
-	
-
-# Not a target:
-ns741.h:
-#  Implicit rule search has been done.
- 
-#  Last modified 2021-12-18 17:44:58.130128706
-#  File has been updated.
-#  Successfully updated.
+ns741.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
 
 # Not a target:
 fmberryd.c:
 #  Implicit rule search has been done.
-#  Last modified 2021-12-19 22:17:35.389921546
+#  Last modified 2022-01-08 21:11:22.97549575
 #  File has been updated.
 #  Successfully updated.
 
 # files hash-table stats:
-# Load=20/1024=2%, Rehash=0, Collisions=3/65=5%
+# Load=16/1024=2%, Rehash=0, Collisions=0/42=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 42 / storage = 360 B / avg = 8 B
-# current buf: size = 8174 B / used = 360 B / count = 42 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 44 / storage = 389 B / avg = 8 B
+# current buf: size = 8174 B / used = 389 B / count = 44 / avg = 8 B
 
-# strcache performance: lookups = 84 / hit rate = 50%
+# strcache performance: lookups = 68 / hit rate = 35%
 # hash-table stats:
-# Load=42/8192=1%, Rehash=0, Collisions=1/84=1%
-# Finished Make data base on Sat Jan  8 16:47:31 2022
+# Load=44/8192=1%, Rehash=0, Collisions=1/68=1%
+# Finished Make data base on Sun Jan  9 17:29:46 2022
 
  

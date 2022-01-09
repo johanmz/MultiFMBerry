@@ -34,8 +34,9 @@ typedef struct _mmr70_data
 	char rdstext[66]; // same here, max 64 chars, 2 nulls are extra (need only 1, but I do not like odd numbers)
 	int rdspi;
 	int rdspty;
-	int i2cmultiplexeraddress;
-	int i2cmultiplexerport;
+	int i2c_mplexaddress;
+	int i2c_mplexport;
+	int i2c_mplexindex; 
 	char IOexpanderconfig[12];
 	int IOexpanderport;
 }mmr70_data_t;
@@ -48,6 +49,13 @@ typedef struct _IOexpander_data
 	int interruptpin;
 }IOexpander_data_t;
 extern IOexpander_data_t IOexpander[];
+
+typedef struct _multiplexer_data
+{
+	int  address;
+	int  i2cbus;
+}multiplexer_data_t;
+extern multiplexer_data_t multiplexer[];
 
 
 int main(int argc, char **argv);

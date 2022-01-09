@@ -14,12 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef __TCA9548A_H_FMBERRY_
-#define __TCA9548A_H_FMBERRY_
-
-#include <stdint.h>
-
-int tca9548a_init_i2c (uint8_t bus)
-
-#endif
+#define MAXTRANSMITTERS  16 
+#define MAXIOEXPANDERS 4
+#define MAXMULTIPLEXERS 8

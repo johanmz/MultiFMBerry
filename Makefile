@@ -4,7 +4,7 @@ CFLAGS = -g
 CFLAGS += -std=gnu99
 
 TARGET_DAEMON=fmberryd
-OBJS = fmberryd.o ns741.o i2c.o rpi_pin.o
+OBJS = fmberryd.o ns741.o i2c.o rpi_pin.o tca9548a.o defs.o
 LIBS = -lconfuse
 
 all: fmberryd

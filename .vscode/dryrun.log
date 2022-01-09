@@ -1,9 +1,11 @@
-make --dry-run --always-make --keep-going --print-directory
+make --dry-run --keep-going --print-directory
 make: Entering directory '/home/pi/git/FMBerry'
 cc -c -g -std=gnu99 fmberryd.c -o fmberryd.o
 cc -c -g -std=gnu99 ns741.c -o ns741.o
 cc -c -g -std=gnu99 i2c.c -o i2c.o
 cc -c -g -std=gnu99 rpi_pin.c -o rpi_pin.o
-cc -g -std=gnu99 -o fmberryd fmberryd.o ns741.o i2c.o rpi_pin.o -lconfuse
+cc -c -g -std=gnu99 tca9548a.c -o tca9548a.o
 make: Leaving directory '/home/pi/git/FMBerry'
+ 
+make: *** No rule to make target 'defs.o', needed by 'fmberryd'.
  
