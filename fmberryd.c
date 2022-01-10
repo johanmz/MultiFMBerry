@@ -224,7 +224,7 @@ int main(int argc, char **argv)
 	ns741_init_reg(nr_transmitters);
 
 	// initialize all tca9548a multiplexer i2c busses
-	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus")==-1))
+	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus"))==-1)
 	{
 		syslog(LOG_ERR, "Init of TCA9548A multiplexer(s) failed! Double-check hardware and .conf and try again!\n");
 		exit(EXIT_FAILURE);
@@ -232,9 +232,9 @@ int main(int argc, char **argv)
 	syslog(LOG_NOTICE, "Successfully initialized i2c bus for TCA9548A multiplexer(s).\n");
 
 	// init I2C bus and transmitters with initial frequency and state
-	if (ns741_init_i2c(cfg_getint(cfg, "i2cbus") == -1))
+	if (ns741_init_i2c(cfg_getint(cfg, "i2cbus"), nr_transmitters) == -1)
 	{
-		syslog(LOG_ERR, "Init failed! Double-check hardware and try again!\n");
+		syslog(LOG_ERR, "Init of transmitters failed! Double-check hardware and .conf and try again!\n");
 		exit(EXIT_FAILURE);
 	}
 	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitters.\n");

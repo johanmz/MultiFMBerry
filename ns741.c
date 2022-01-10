@@ -19,6 +19,8 @@
 #include "rds.h"
 #include "ns741.h"
 #include "i2c.h"
+#include "tca9548a.h"
+#include "fmberryd.h"
 
 
 
@@ -100,7 +102,7 @@ static uint8_t ns741_reg[MAXNRTRANSMITTERS][22]=
 // set the N741 register map for every transmitter
 void ns741_init_reg(uint8_t nr_transmitters)
 {
-	for (uint8_t j = 1; j<nr_transmitters;j++)
+	for (int j = 1; j < nr_transmitters;j++)
 	{
 		for (uint8_t k = 0; k< sizeof(ns741_reg[1]); k++)
 			ns741_reg[j][k] = ns741_reg[0][k];
@@ -112,13 +114,35 @@ void ns741_init_reg(uint8_t nr_transmitters)
 }
 
 // initialise i2c bus for the transmitters
-int ns741_init_i2c (uint8_t bus)
+int ns741_init_i2c (uint8_t bus, uint8_t nr_transmitters)
 {
+	int index;
+	int port;
+	// open the multiplexer to the first transmitter
+	index = mmr70[0].i2c_mplexindex;
+	port = mmr70[0].i2c_mplexport;
+	if (tca9548a_select_port(index, port) == -1)
+		return -1;
+	
+	// open the i2cbus for the transmitters, 0x66 
 	i2cbus = i2c_init(bus, address);
 	if ((i2cbus == -1) || (i2c_send(i2cbus, 0x00, 0x00) == -1))
 		return -1;
-	//toevoegen: loop om elke transmitter te selecteren en dan aan te zetten
-
+	// reset register of first transmitter to default values
+	if (i2c_send_data(i2cbus, 0, ns741_reg[0], sizeof(ns741_reg[0])) == -1)
+		return -1;
+	
+	// initialise the remaining transmitters
+	for (int j = 1; j < nr_transmitters;j++)
+	{
+		index = mmr70[j].i2c_mplexindex;
+		port = mmr70[j].i2c_mplexport;
+		if (tca9548a_select_port(index, port) == -1)
+			return -1;
+		// reset registers to default values
+		if (i2c_send_data(i2cbus, 0, ns741_reg[j], sizeof(ns741_reg[j])) == -1)
+			return -1;
+	}
 	return 0;
 }
 

@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
-int tca9548a_init_i2c (uint8_t bus)
+int tca9548a_init_i2c (uint8_t bus);
+int tca9548a_select_port (uint8_t index, uint8_t port);
 
 #endif

@@ -28,7 +28,7 @@
 
 //int  ns741_init(uint8_t i2c_bus, uint32_t f_khz);
 void ns741_init_reg(uint8_t nr_transmitters); // set the N741 register map for every transmitter
-int ns741_init_i2c (uint8_t bus); // initialise i2c bus for the transmitters
+int ns741_init_i2c (uint8_t bus, uint8_t nr_transmitters); // initialise i2c bus for the transmitters
 void ns741_set_frequency(uint8_t transmitter, uint32_t f_khz);
 void ns741_power(uint8_t transmitter, uint8_t on); // radio on/off
 void ns741_mute(uint8_t transmitter, uint8_t on); // mute on/off

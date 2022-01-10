@@ -23,7 +23,7 @@
 // I2C address of tca9548a multiplexer
 static int address;
 
-// initialise i2c bus for tca9548a multiplexer
+// initialise i2c bus for tca9548a multiplexer(s)
 int tca9548a_init_i2c (uint8_t bus)
 {
     for (int j=0; j<MAXMULTIPLEXERS; j++)
@@ -40,4 +40,17 @@ int tca9548a_init_i2c (uint8_t bus)
             break;
     }
     return 0;
+}
+
+int tca9548a_select_port (uint8_t index, uint8_t port)
+{
+    int i2cbus = multiplexer[index].i2cbus;
+	
+    char buf[1];										
+	sprintf (buf, "%d", 1 << port);
+	if ((write(i2cbus, buf, 1)) != 1) {
+		return -1;
+	}
+	return 0;    
+
 }
