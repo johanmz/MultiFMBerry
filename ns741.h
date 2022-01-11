@@ -39,10 +39,10 @@ void ns741_input_gain(uint8_t transmitter, uint8_t on); // input audio gain -9dB
 void ns741_stereo(uint8_t transmitter, uint8_t on); // stereo on/off
 void ns741_rds(uint8_t transmitter, uint8_t on); // RDS on/off
 void ns741_rds_cp(uint8_t transmitter, uint8_t cp); // RDS_CP flag, third block type: C (cp=0) or C' (cp=1)
-void ns741_rds_set_progname(const char *text);
+void ns741_rds_set_progname(uint8_t transmitter, const char *text);
 void ns741_rds_set_rds_pi(uint16_t rdspi);
 void ns741_rds_set_rds_pty(uint8_t rdspty);
-void ns741_rds_set_radiotext(const char *text);
+void ns741_rds_set_radiotext(uint8_t transmitter, const char *text);
 void ns741_rds_reset_radiotext(void); // toggle Reset flag
 
 void ns741_rds_debug(uint8_t on);

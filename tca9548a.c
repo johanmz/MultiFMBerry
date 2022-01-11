@@ -33,7 +33,7 @@ int tca9548a_init_i2c (uint8_t bus)
         {
             multiplexer[j].i2cbus=-1;
             multiplexer[j].i2cbus=i2c_init(bus, address);
-            if ((multiplexer[j].i2cbus == -1) || (i2c_send(multiplexer[j].i2cbus, 0x00, 0x00) == -1))
+            if (multiplexer[j].i2cbus == -1) 
                 return -1;
         }
         else   

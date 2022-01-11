@@ -1,1 +1,10 @@
 fmberryd
+.vscode/configurationCache.log
+.vscode/dryrun.log
+.vscode/settings.json
+.vscode/targets.log
+fmberryd.o
+i2c.o
+ns741.o
+rpi_pin.o
+tca9548a.o

@@ -34,11 +34,12 @@ static int i2cbus = -1;
 #define NS741_FREQ(F) ((uint16_t)((uint32_t)F*1000ULL/8192ULL))
 
 // Program Service name
-static char ps_name[8];
+static char ps_name[MAXNRTRANSMITTERS][8];
 // Radiotext message, by default an empty line
 static uint8_t text_len = 1;
 //                          "----------------------------64----------------------------------"
-static char radiotext[64] = "\r                                                               ";
+static char radiotext[MAXNRTRANSMITTERS][64];
+// = "\r                                                               ";
 // *hrr hrr*                "Twilight Sparkle is best Pony.                                  "
 
 uint8_t rds_register[4] = {0x03, 0x05, 0x05, 0x05};
@@ -104,9 +105,9 @@ void ns741_init_reg(uint8_t nr_transmitters)
 {
 	for (int j = 1; j < nr_transmitters;j++)
 	{
-		for (uint8_t k = 0; k< sizeof(ns741_reg[1]); k++)
+		for (int k = 0; k< sizeof(ns741_reg[1]); k++)
 			ns741_reg[j][k] = ns741_reg[0][k];
-		// increase the frequency of every next transmitter by 200 Khz
+		// increase the default frequency of every next transmitter by 200 Khz
 		ns741_reg[j][0x0A] = (NS741_FREQ(NS741_DEFAULT_F + j*200) & 0xFF);
 		ns741_reg[j][0x0B] = ((NS741_FREQ(NS741_DEFAULT_F + j*200) & 0xFF00) >> 8);
 	}
@@ -307,20 +308,20 @@ void ns741_rds_cp(uint8_t transmitter, uint8_t cp)
 	return;
 }
 
-void ns741_rds_set_radiotext(const char *text)
+void ns741_rds_set_radiotext(uint8_t transmitter, const char *text)
 {
 	uint8_t i;
 
 	// first copy text to our buffer
 	for (i = 0; *text && (i < 64); i++, text++)
-		radiotext[i] = *text;
+		radiotext[transmitter][i] = *text;
 	text_len = i;
 	if (i < 64) {
 		text_len++;
-		radiotext[i++] = '\r';
+		radiotext[transmitter][i++] = '\r';
 		// pad buffer with spaces
 		for (; i < 64; i++)
-			radiotext[i] = ' ';
+			radiotext[transmitter][i] = ' ';
 	}
 }
 
@@ -353,15 +354,15 @@ void ns741_rds_debug(uint8_t on)
 // text - up to 8 characters
 // shorter text will be padded with spaces for transmission
 // so exactly 8 chars will be transmitted
-void ns741_rds_set_progname(const char *text)
+void ns741_rds_set_progname(uint8_t transmitter, const char *text)
 {
 	uint8_t i;
 	// first copy text to our buffer
 	for (i = 0; *text && (i < 8); i++, text++)
-		ps_name[i] = *text;
+		ps_name[transmitter][i] = *text;
 	// pad buffer with spaces
 	for (; i < 8; i++)
-		ps_name[i] = ' ';
+		ps_name[transmitter][i] = ' ';
 }
 
 // in total we can send 20 groups:

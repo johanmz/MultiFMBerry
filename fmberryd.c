@@ -239,31 +239,25 @@ int main(int argc, char **argv)
 	}
 	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitters.\n");
 
-
-/*
-	// Init I2C bus and transmitter with initial frequency and state
-	if (ns741_init(cfg_getint(cfg, "i2cbus"), cfg_getint(cfg, "frequency")) == -1)
-	{
-		syslog(LOG_ERR, "Init failed! Double-check hardware and try again!\n");
-		exit(EXIT_FAILURE);
-	}
-	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitter.\n");
-*/
-
-
-/*	
 	// apply configuration parameters
-	ns741_txpwr(mmr70.txpower);
-	ns741_mute(mmr70.mute);
-	ns741_stereo(mmr70.stereo);
-	ns741_rds_set_progname(mmr70.rdsid);
-	ns741_rds_set_radiotext(mmr70.rdstext);
-	ns741_power(mmr70.power);
-	ns741_input_gain(mmr70.gain);
-    ns741_volume(mmr70.volume);
+	for (int j = 0; j< nr_transmitters; j++)
+	{
+		// set the port on the tca9548a to the right tranmitter
+		tca9548a_select_port(mmr70[j].i2c_mplexindex, mmr70[j].IOexpanderport);
+		// and set the parameters on the transmitter
+		ns741_txpwr(j, mmr70[j].txpower);
+		ns741_mute(j, mmr70[j].mute);
+		ns741_stereo(j, mmr70[j].stereo);
+		ns741_rds_set_progname(j, mmr70[j].rdsid);
+		ns741_rds_set_radiotext(j, mmr70[j].rdstext);
+		ns741_power(j, mmr70[j].power);
+		ns741_input_gain(j, mmr70[j].gain);
+		ns741_volume(j, mmr70[j].volume);
+		// nog maken functies voor rdspi en rdspty
+	}
 	// Use RPI_REV1 for earlier versions of Raspberry Pi
 	rpi_pin_init(RPI_REVISION);
-
+/*
 	// Get file descriptor for RDS handler
 	polls[1].revents = 0;
 	if (mmr70.rds)
