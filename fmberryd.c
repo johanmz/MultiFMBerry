@@ -19,6 +19,7 @@
 #include "rpi_pin.h"
 #include "ns741.h"
 #include "tca9548a.h"
+#include "mcp23017.h"
 
 #include <poll.h>
 #include <stdlib.h>
@@ -168,7 +169,6 @@ int main(int argc, char **argv)
 		strncpy(IOexpander[k].id, cfg_title(cfg_IOexpander), 12);
 		IOexpander[k].address 		= cfg_getint (cfg_IOexpander, "IOexpanderaddress");
 		IOexpander[k].interruptpin 	= cfg_getint (cfg_IOexpander, "IOinterruptpin");
-
 	}
 
 	// initialize data structure for 'status' command
@@ -191,6 +191,18 @@ int main(int argc, char **argv)
 		mmr70[j].i2c_mplexaddress 	= cfg_getint(cfg_transmitter, "i2cmultiplexeraddress");
 		mmr70[j].i2c_mplexport	 	= cfg_getint(cfg_transmitter, "i2cmultiplexerport");
 		strncpy(mmr70[j].IOexpanderconfig, cfg_getstr(cfg_transmitter, "IOexpanderconfig"), 12);
+		mmr70[j].IOexpanderindex = -1;
+		for (int k =0; k<nr_IOexpanders;k++)
+			if (!strcmp(IOexpander[k].id, mmr70[j].IOexpanderconfig))
+			{
+				mmr70[j].IOexpanderindex = k;
+				break;
+			}
+		if (mmr70[j].IOexpanderindex == -1)
+		{
+			syslog(LOG_ERR, "Error with matching IOExpander config for transmitter with IOexpander config section. Correct .conf file. \n");
+			exit(EXIT_FAILURE);
+		}
 		mmr70[j].IOexpanderport 	= cfg_getint(cfg_transmitter, "IOexpanderport");
 	}
 	
@@ -231,6 +243,14 @@ int main(int argc, char **argv)
 	}
 	syslog(LOG_NOTICE, "Successfully initialized i2c bus for TCA9548A multiplexer(s).\n");
 
+	// init I2C bus for the mcp23017 IC expander(s)
+	if (mcp23017_init_i2c(cfg_getint(cfg, "i2cbus")) == -1 || mcp23017_init_INT()==-1)
+	{
+		syslog(LOG_ERR, "Init of mcp23017 IO expander(s) failed! Double-check hardware and .conf and try again!\n");
+		exit(EXIT_FAILURE);
+	}
+	syslog(LOG_NOTICE, "Successfully initialized i2c bus for mcp23017 IO expander(s)\n");
+
 	// init I2C bus and transmitters with initial frequency and state
 	if (ns741_init_i2c(cfg_getint(cfg, "i2cbus"), nr_transmitters) == -1)
 	{
@@ -239,12 +259,14 @@ int main(int argc, char **argv)
 	}
 	syslog(LOG_NOTICE, "Successfully initialized ns741 transmitters.\n");
 
+
 	// apply configuration parameters
 	for (int j = 0; j< nr_transmitters; j++)
 	{
 		// set the port on the tca9548a to the right tranmitter
-		tca9548a_select_port(mmr70[j].i2c_mplexindex, mmr70[j].IOexpanderport);
+		tca9548a_select_port(mmr70[j].i2c_mplexindex, mmr70[j].i2c_mplexport);
 		// and set the parameters on the transmitter
+		ns741_set_frequency (j, mmr70[j].frequency);
 		ns741_txpwr(j, mmr70[j].txpower);
 		ns741_mute(j, mmr70[j].mute);
 		ns741_stereo(j, mmr70[j].stereo);
@@ -255,8 +277,11 @@ int main(int argc, char **argv)
 		ns741_volume(j, mmr70[j].volume);
 		// nog maken functies voor rdspi en rdspty
 	}
+
+	int xy = mcp23017_read_trs_rdsstatus(0); 
 	// Use RPI_REV1 for earlier versions of Raspberry Pi
 	rpi_pin_init(RPI_REVISION);
+
 /*
 	// Get file descriptor for RDS handler
 	polls[1].revents = 0;

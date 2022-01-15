@@ -39,6 +39,7 @@ typedef struct _mmr70_data
 	int i2c_mplexindex; 
 	char IOexpanderconfig[12];
 	int IOexpanderport;
+	int IOexpanderindex;
 }mmr70_data_t;
 extern mmr70_data_t mmr70[];
 
@@ -47,6 +48,8 @@ typedef struct _IOexpander_data
 	char id[12];
 	int address;
 	int interruptpin;
+	int i2cbus;
+	uint16_t GPINTEN;
 }IOexpander_data_t;
 extern IOexpander_data_t IOexpander[];
 
