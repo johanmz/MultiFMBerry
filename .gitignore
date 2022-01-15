@@ -8,3 +8,4 @@ i2c.o
 ns741.o
 rpi_pin.o
 tca9548a.o
+mcp23017.o

@@ -23,7 +23,7 @@ static int i2cbus = -1;
 static int address;
 
 // initialise i2c bus for IOexpander(s) used to read the RDS_INT signal from the transmitters
-// mcp23017 is by default already in BANK=0 mode and GPIOA and B in input mode
+// mcp23017 is by default already in paired (BANK=0) mode and GPIOA/B is by default already in input mode. Which is what we need :-)
 int mcp23017_init_i2c (uint8_t bus)
 {
     for (int j=0; j<MAXIOEXPANDERS; j++)
@@ -41,11 +41,11 @@ int mcp23017_init_i2c (uint8_t bus)
     return 0;
 }
 
-// set  the mccp23017 interrupt register in mirror mode and enable the interrupts for the ports with a MMR70
+// setup the interrupt registers for the mcp23017, we need this to pass the RDS_INT for the transmitters to the raspberry pi
 int mcp23017_init_INT ()
 {
  
-     // build up the GPINTEN register for the ports with a MMR70 connected, for each multiplexere
+     // build up the GPINTEN register for the ports with a MMR70 connected, for each mcp23017
     int IOexpanderport;
     uint16_t GPINTEN=0;
     for (int k=0; k<MAXTRANSMITTERS; k++)
@@ -61,19 +61,23 @@ int mcp23017_init_INT ()
            break;
     }
  
-    // set in mirror mode and enable the interrupts
-	char buf[3];
+    // initalise each mcp23017 to handle the interrupts from the transmitters
+	char buf[5];
     for (int j=0; j<MAXIOEXPANDERS; j++)
     {
         if (IOexpander[j].address)
         {
+            // set interrupt pins in mirror mode
             if (i2c_send (IOexpander[j].i2cbus, 0x0a, 0b01000000)==-1)
                 return -1;
+            // enable the interrupts for the mcp20137 io ports where a transmitter is connected to
             GPINTEN = IOexpander[j].GPINTEN;
-    	    buf[0] = 0x04;	// register for GPINTENA, since mcp23017 is in mirror mode the next register is for GPINTENB, we can write both GPINTEN for A en B together				
-	        buf[1] = GPINTEN & 0xFF;
+    	    buf[0] = 0x04;	// start address for writing which ports to enable for interrupts and the DEFVAL values so that interrupts are triggered when RDSINT goes low		
+	        buf[1] = GPINTEN & 0xFF; 
 	        buf[2] = (GPINTEN & 0xFF00) >> 8;
-    	    if ((write(IOexpander[j].i2cbus, buf, 3)) != 3) {
+            buf[3] = 0b11111111; // set DEFVAL to 1 for all ports
+            buf[4] = 0b11111111;
+    	    if ((write(IOexpander[j].i2cbus, buf, 5)) != 5) {
 	    	    return -1;
 	        }   
         }
@@ -82,7 +86,6 @@ int mcp23017_init_INT ()
     }
     return 0;
 }
-
 
 
 uint16_t mcp23017_read_trs_rdsstatus (int index)

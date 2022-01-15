@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 	rdsint = cfg_getint(cfg, "rdspin");
 
 	int nfds;
-	struct pollfd  polls[2];
+	struct pollfd  polls[MAXIOEXPANDERS+1]; //+1 for the tcp polling
 /*
 	// open TCP listener socket, will exit() in case of error
 	int lst = ListenTCP(cfg_getint(cfg, "tcpport"));
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
 	// apply configuration parameters
 	for (int j = 0; j< nr_transmitters; j++)
 	{
-		// set the port on the tca9548a to the right tranmitter
+		// enable the transmitter i2c port on the tca9548a 
 		tca9548a_select_port(mmr70[j].i2c_mplexindex, mmr70[j].i2c_mplexport);
 		// and set the parameters on the transmitter
 		ns741_set_frequency (j, mmr70[j].frequency);
@@ -282,28 +282,29 @@ int main(int argc, char **argv)
 	// Use RPI_REV1 for earlier versions of Raspberry Pi
 	rpi_pin_init(RPI_REVISION);
 
-/*
-	// Get file descriptor for RDS handler
-	polls[1].revents = 0;
-	if (mmr70.rds)
+	int rds;
+	for (int j=1;j < nr_IOexpanders+1;j++)
 	{
-		int rds = rpi_pin_poll_enable(rdsint, EDGE_FALLING);
+		// Get file descriptor for RDS handler
+		polls[j].revents = 0;
+		rdsint=IOexpander[j].interruptpin;
+		rds = rpi_pin_poll_enable(rdsint, EDGE_FALLING);
 	    if (rds < 0) {
 	        printf("Couldn't enable RDS support\n");
 	        run = 0;
+			break;
 	    }
-		polls[1].fd = rds;
-		polls[1].events = POLLPRI;
+		polls[j].fd = rds;
+		polls[j].events = POLLPRI;
 		nfds = 2;
-		if (ledpin > 0) {
-			rpi_pin_export(ledpin, RPI_OUTPUT);
-			rpi_pin_set(ledpin, led);
+
+		for (int k=0;k<nr_transmitters;k++)
+		{
+			ns741_rds(k, 1);
+			ns741_rds_isr(k); // send first two bytes
 		}
-
-		ns741_rds(1);
-		ns741_rds_isr(); // send first two bytes
 	}
-
+/*
 	// main polling loop
 	int ledcounter = 0;
 	while(run) {
