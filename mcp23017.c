@@ -62,22 +62,22 @@ int mcp23017_init_INT ()
     }
  
     // initalise each mcp23017 to handle the interrupts from the transmitters
-	char buf[5];
+    // enable only connected ports to trigger an interrupt, when RDSINT of transmitter goes low
+	char buf[8];
     for (int j=0; j<MAXIOEXPANDERS; j++)
     {
         if (IOexpander[j].address)
         {
-            // set interrupt pins in mirror mode
-            if (i2c_send (IOexpander[j].i2cbus, 0x0a, 0b01000000)==-1)
-                return -1;
-            // enable the interrupts for the mcp20137 io ports where a transmitter is connected to
             GPINTEN = IOexpander[j].GPINTEN;
-    	    buf[0] = 0x04;	// start address for writing which ports to enable for interrupts and the DEFVAL values so that interrupts are triggered when RDSINT goes low		
-	        buf[1] = GPINTEN & 0xFF; 
+    	    buf[0] = 0x04;	            // start address for writing which ports 		
+	        buf[1] = GPINTEN & 0xFF;    // enable the interrupts for the mcp20137 io ports where a transmitter is connected to
 	        buf[2] = (GPINTEN & 0xFF00) >> 8;
-            buf[3] = 0b11111111; // set DEFVAL to 1 for all ports
+            buf[3] = 0b11111111;        // DEFVAL, trigger on low 
             buf[4] = 0b11111111;
-    	    if ((write(IOexpander[j].i2cbus, buf, 5)) != 5) {
+            buf[5] = 0b11111111;        // INTCON, trigger on compare to default value
+            buf[6] = 0b11111111;
+            buf[7] = 0b01000000;        // IOCON, set interrupt in mirror mode
+    	    if ((write(IOexpander[j].i2cbus, buf, 8)) != 8) {
 	    	    return -1;
 	        }   
         }
