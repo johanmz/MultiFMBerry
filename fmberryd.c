@@ -48,6 +48,8 @@ static cfg_t *cfg, *cfg_transmitter, *cfg_IOexpander;
 static volatile int run = 1;
 static int start_daemon = 1;
 
+static int IOexpander_to_mmr70[MAXIOEXPANDERS][16]; // lookup which transmitter belongs to which mcp23017 por, in handling rds interupts
+
 int main(int argc, char **argv)
 {
 	//Check if user == root
@@ -206,6 +208,13 @@ int main(int argc, char **argv)
 		mmr70[j].IOexpanderport 	= cfg_getint(cfg_transmitter, "IOexpanderport");
 	}
 	
+	//build up table so that we quickly can lookup which transmitter belongs to which mcp23017 port while handling rds interupts 
+	for (int j=0; j<nr_IOexpanders;j++)
+		for (int k=0;k<16;k++)
+			IOexpander_to_mmr70[j][k] = -1;
+	for (int l=0;l<nr_transmitters;l++)
+		IOexpander_to_mmr70[mmr70[l].IOexpanderindex][mmr70[l].IOexpanderport]=l;
+	
 	// build up index for the multiplexers for initialisation of the i2cbus
 	// use the index number for each multiplexer also for 
 	int mplex_found;
@@ -231,6 +240,7 @@ int main(int argc, char **argv)
 			mmr70[j].i2c_mplexindex = mplexindex;
 		}
 	}
+
 
 	// initialize the ns741 register map for all transmitters
 	ns741_init_reg(nr_transmitters);
@@ -278,15 +288,15 @@ int main(int argc, char **argv)
 		// nog maken functies voor rdspi en rdspty
 	}
 
-	int xy = mcp23017_read_trs_rdsstatus(0); 
+	uint16_t xy = mcp23017_read_trs_rdsstatus(0); 
 	// Use RPI_REV1 for earlier versions of Raspberry Pi
 	rpi_pin_init(RPI_REVISION);
 
 	int rds;
-	for (int j=1;j < nr_IOexpanders+1;j++)
+	for (int j=0;j < nr_IOexpanders;j++)
 	{
 		// Get file descriptor for RDS handler
-		polls[j].revents = 0;
+		polls[j+1].revents = 0;
 		rdsint=IOexpander[j].interruptpin;
 		rds = rpi_pin_poll_enable(rdsint, EDGE_FALLING);
 	    if (rds < 0) {
@@ -294,16 +304,21 @@ int main(int argc, char **argv)
 	        run = 0;
 			break;
 	    }
-		polls[j].fd = rds;
-		polls[j].events = POLLPRI;
+		polls[j+1].fd = rds;
+		polls[j+1].events = POLLPRI;
 		nfds = 2;
-
-		for (int k=0;k<nr_transmitters;k++)
-		{
-			ns741_rds(k, 1);
-			ns741_rds_isr(k); // send first two bytes
-		}
 	}
+	for (int k=0;k<nr_transmitters;k++)
+	{
+		if (tca9548a_select_port(k,mmr70[k].i2c_mplexport) == -1)
+		{
+			syslog(LOG_ERR, "Could not switch tca9548a\n");
+			exit(EXIT_FAILURE);
+		}
+		ns741_rds(k, 1);
+		ns741_rds_isr(k); // send first two bytes
+	}
+
 /*
 	// main polling loop
 	int ledcounter = 0;
