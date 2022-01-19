@@ -49,6 +49,7 @@ typedef struct _IOexpander_data
 	int address;
 	int interruptpin;
 	int i2cbus;
+	int intr_notfinished;
 	uint16_t GPINTEN;
 }IOexpander_data_t;
 extern IOexpander_data_t IOexpander[];

@@ -35,7 +35,7 @@
 
 
 // RDS interrupt pin
-int rdsint = 17;
+int rdsint;
 
 // LED pin number
 int ledpin = -1;
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 	    }
 		polls[j+1].fd = rds;
 		polls[j+1].events = POLLPRI;
-		nfds = 2;
+		nfds = 1+nr_IOexpanders;
 	}
 	for (int k=0;k<nr_transmitters;k++)
 	{
@@ -315,35 +315,46 @@ int main(int argc, char **argv)
 			syslog(LOG_ERR, "Could not switch tca9548a\n");
 			exit(EXIT_FAILURE);
 		}
-		ns741_rds(k, 1);
+		ns741_rds(k, mmr70[k].rds);
 		ns741_rds_isr(k); // send first two bytes
 	}
 
-/*
+
 	// main polling loop
+	uint16_t trs_rdsstatus;
+	uint8_t transmitter;
 	int ledcounter = 0;
 	while(run) {
 		if (poll(polls, nfds, -1) < 0)
 			break;
 
-		if (polls[1].revents) {
-			rpi_pin_poll_clear(polls[1].fd);
-			ns741_rds_isr();
-			// flash LED if enabled on every other RDS refresh cycle
-			if (ledpin > 0) {
-				ledcounter++;
-				if (!(ledcounter % 80)) {
-					led ^= 1;
-					rpi_pin_set(ledpin, led);
+		for (int j=0;j<nr_IOexpanders;j++)
+		{
+			if (polls[j+1].revents || IOexpander[j].intr_notfinished) {
+				// rpi_pin_poll_clear(polls[j+1].fd);
+				trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
+				trs_rdsstatus &= IOexpander[j].GPINTEN;
+				for (int k=0;k++;k<16)
+				{
+					if (trs_rdsstatus & 0x0001)
+					{
+						transmitter = IOexpander_to_mmr70[j][k];
+						tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
+						ns741_rds_isr(transmitter);
+					}
+					trs_rdsstatus >>= 1;
+
+				// while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run
+				IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
 				}
 			}
 		}
 
-		if (polls[0].revents)
-			ProcessTCP(lst, &mmr70);
+		// if (polls[0].revents)
+		// 	ProcessTCP(lst, &mmr70);
 	}
 
-	// clean up at exit
+/*	// clean up at exit
 	ns741_power(0);
 	if (mmr70.rds)
 		rpi_pin_unexport(rdsint);
