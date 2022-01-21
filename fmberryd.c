@@ -324,34 +324,66 @@ int main(int argc, char **argv)
 	uint16_t trs_rdsstatus;
 	uint8_t transmitter;
 	int ledcounter = 0;
+	int intr_notfinished;
 	while(run) {
+		//int testje = rpi_pin_get(17);
+		// intr_notfinished = 0;
+		// for (int j = 0; j<nr_IOexpanders;j++)
+		// 	if (IOexpander[j].intr_notfinished)
+		// 	{
+		// 		intr_notfinished = 1;
+		// 		break;
+		// 	}
+		// // if new interrupts from transmitter came during the previous processing, first handle these
+		// // if all done then wait for the next interrupt
+		// // note that the interruptpin of the mcp20317 will only return to high if there are no more MRR70's with the interrupt low AND the GPIO register of the MCP23017 is read
+		// if (!intr_notfinished) 
+		// 	if (poll(polls, nfds, 1000) < 0)
+		// 		break;
+
+		// for (int j=0;j<nr_IOexpanders;j++)
+		// {
+		// 	if (polls[j+1].revents || IOexpander[j].intr_notfinished) {
+		// 		rpi_pin_poll_clear(polls[j+1].fd);
+		// 		trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
+		// 		trs_rdsstatus &= IOexpander[j].GPINTEN;
+		// 		for (int k=0;k<16;k++)
+		// 		{
+		// 			if (trs_rdsstatus & 0x0001)
+		// 			{
+		// 				transmitter = IOexpander_to_mmr70[j][k];
+		// 				// tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
+		// 				ns741_rds_isr(transmitter);
+		// 			}
+		// 			trs_rdsstatus >>= 1;
+		// 		}
+		// 		// while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run
+		// 		IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
+		// 	}
+		// }
+
+		// if (polls[0].revents)
+		// 	ProcessTCP(lst, &mmr70);
+
 		if (poll(polls, nfds, -1) < 0)
 			break;
 
-		for (int j=0;j<nr_IOexpanders;j++)
-		{
-			if (polls[j+1].revents || IOexpander[j].intr_notfinished) {
-				// rpi_pin_poll_clear(polls[j+1].fd);
-				trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
-				trs_rdsstatus &= IOexpander[j].GPINTEN;
-				for (int k=0;k++;k<16)
-				{
-					if (trs_rdsstatus & 0x0001)
-					{
-						transmitter = IOexpander_to_mmr70[j][k];
-						tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
-						ns741_rds_isr(transmitter);
-					}
-					trs_rdsstatus >>= 1;
-
-				// while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run
-				IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
+		if (polls[1].revents) {
+			rpi_pin_poll_clear(polls[1].fd);
+			ns741_rds_isr(1);
+			// flash LED if enabled on every other RDS refresh cycle
+			if (ledpin > 0) {
+				ledcounter++;
+				if (!(ledcounter % 80)) {
+					led ^= 1;
+					rpi_pin_set(ledpin, led);
 				}
 			}
 		}
 
-		// if (polls[0].revents)
-		// 	ProcessTCP(lst, &mmr70);
+
+
+
 	}
 
 /*	// clean up at exit

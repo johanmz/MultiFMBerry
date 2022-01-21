@@ -44,8 +44,12 @@ static char radiotext[MAXNRTRANSMITTERS][64];
 
 uint8_t rds_register[MAXNRTRANSMITTERS][4] = {0x03, 0x05, 0x05, 0x05};
 
-static uint8_t group_index[MAXNRTRANSMITTERS];// = 0; // group to be transmitted
-static uint8_t block_index[MAXNRTRANSMITTERS];// = 0; // block index within the group
+// static uint8_t group_index[MAXNRTRANSMITTERS];// = 0; // group to be transmitted
+// static uint8_t block_index[MAXNRTRANSMITTERS];// = 0; // block index within the group
+
+static uint8_t group_index = 0; // group to be transmitted
+static uint8_t block_index = 0; // block index within the group
+
 
 // RDS 2A Group containing Radiotext chars
 // It is better not to use CC of your country
@@ -118,8 +122,8 @@ void ns741_init_reg(uint8_t nr_transmitters)
 			rds_ps[j][k]=rds_ps[0][j];
 		}
 
-		group_index[j]=0;
-		block_index[j]=0;
+	// 	group_index[j]=0;
+	// 	block_index[j]=0;
 	}
 
 }
@@ -378,59 +382,117 @@ void ns741_rds_set_progname(uint8_t transmitter, const char *text)
 
 // in total we can send 20 groups:
 // 4 groups with Program Service Name and 16 with Radiotext
+// uint8_t ns741_rds_isr(uint8_t transmitter)
+// {
+// 	uint8_t *data;
+// 	static uint16_t *block;
+
+// 	if (block_index[transmitter] == 0) {
+// 		if (group_index[transmitter] > 3) {
+// 			uint8_t i = (group_index[transmitter] - 4) << 2;
+// 			if (i < text_len) {
+// 				block = rds_text[transmitter];
+// 				block[1] &= ~RDS_RTIM;
+// 				block[1] |= group_index[transmitter] - 4;
+// 				data = (uint8_t *)&block[2];
+// 				data[1] = radiotext[transmitter][i];
+// 				data[0] = radiotext[transmitter][i+1];
+// 				data[3] = radiotext[transmitter][i+2];
+// 				data[2] = radiotext[transmitter][i+3];
+// 			}
+// 			else {
+// 				rds_debug_max = group_index[transmitter] << 2;
+// 				group_index[transmitter] = 0; // switch back to PS
+// 			}
+// 		}
+
+// 		if (group_index[transmitter] < 4) {
+// 			if ((group_index[transmitter] == 0) && (rds_debug & 0x80))
+// 				rds_debug = 0;
+// 			block = rds_ps[transmitter];
+// 			block[1] &= ~RDS_PSIM;
+// 			block[1] |= group_index[transmitter];
+// 			data = (uint8_t *)&block[3];
+// 			uint8_t i = group_index[transmitter] << 1; // 0,2,4,6
+// 			data[1] = ps_name[transmitter][i];
+// 			data[0] = ps_name[transmitter][i+1];
+// 		}
+// 		// uncomment following line if Group type B is used
+// 		// ns741_rds_cp((block[1] & 0x0800) >> 8);
+// 	}
+
+// 	if (rds_debug < rds_debug_max) {
+// 		data = (uint8_t *)&block[block_index[transmitter]];
+// 		if (block_index[transmitter] == 0)
+// 			printf("%2d %02X%02X", group_index, data[1], data[0]);
+// 		else 
+// 			printf(" %02X%02X", data[1], data[0]);
+// 		if (block_index[transmitter] == 3)
+// 			printf("\n");
+// 		rds_debug++;
+// 	}
+
+// 	i2c_send_word(i2cbus, rds_register[block_index[transmitter]], (uint8_t *)&block[block_index[transmitter]]);
+// 	block_index[transmitter] = (block_index[transmitter] + 1) & 0x03;
+// 	if (!block_index[transmitter])
+// 		group_index[transmitter] = (group_index[transmitter] + 1) % RDS_MAX_GROUPS;
+// 	return group_index[transmitter];
+// }
+// in total we can send 20 groups:
+// 4 groups with Program Service Name and 16 with Radiotext
 uint8_t ns741_rds_isr(uint8_t transmitter)
 {
 	uint8_t *data;
 	static uint16_t *block;
 
-	if (block_index[transmitter] == 0) {
-		if (group_index[transmitter] > 3) {
-			uint8_t i = (group_index[transmitter] - 4) << 2;
+	if (block_index == 0) {
+		if (group_index > 3) {
+			uint8_t i = (group_index - 4) << 2;
 			if (i < text_len) {
-				block = rds_text[transmitter];
+				block = rds_text;
 				block[1] &= ~RDS_RTIM;
-				block[1] |= group_index[transmitter] - 4;
+				block[1] |= group_index - 4;
 				data = (uint8_t *)&block[2];
-				data[1] = radiotext[transmitter][i];
-				data[0] = radiotext[transmitter][i+1];
-				data[3] = radiotext[transmitter][i+2];
-				data[2] = radiotext[transmitter][i+3];
+				data[1] = radiotext[i];
+				data[0] = radiotext[i+1];
+				data[3] = radiotext[i+2];
+				data[2] = radiotext[i+3];
 			}
 			else {
-				rds_debug_max = group_index[transmitter] << 2;
-				group_index[transmitter] = 0; // switch back to PS
+				rds_debug_max = group_index << 2;
+				group_index = 0; // switch back to PS
 			}
 		}
 
-		if (group_index[transmitter] < 4) {
-			if ((group_index[transmitter] == 0) && (rds_debug & 0x80))
+		if (group_index < 4) {
+			if ((group_index == 0) && (rds_debug & 0x80))
 				rds_debug = 0;
-			block = rds_ps[transmitter];
+			block = rds_ps;
 			block[1] &= ~RDS_PSIM;
-			block[1] |= group_index[transmitter];
+			block[1] |= group_index;
 			data = (uint8_t *)&block[3];
-			uint8_t i = group_index[transmitter] << 1; // 0,2,4,6
-			data[1] = ps_name[transmitter][i];
-			data[0] = ps_name[transmitter][i+1];
+			uint8_t i = group_index << 1; // 0,2,4,6
+			data[1] = ps_name[i];
+			data[0] = ps_name[i+1];
 		}
 		// uncomment following line if Group type B is used
 		// ns741_rds_cp((block[1] & 0x0800) >> 8);
 	}
 
 	if (rds_debug < rds_debug_max) {
-		data = (uint8_t *)&block[block_index[transmitter]];
-		if (block_index[transmitter] == 0)
+		data = (uint8_t *)&block[block_index];
+		if (block_index == 0)
 			printf("%2d %02X%02X", group_index, data[1], data[0]);
 		else 
 			printf(" %02X%02X", data[1], data[0]);
-		if (block_index[transmitter] == 3)
+		if (block_index == 3)
 			printf("\n");
 		rds_debug++;
 	}
 
-	i2c_send_word(i2cbus, rds_register[block_index[transmitter]], (uint8_t *)&block[block_index[transmitter]]);
-	block_index[transmitter] = (block_index[transmitter] + 1) & 0x03;
-	if (!block_index[transmitter])
-		group_index[transmitter] = (group_index[transmitter] + 1) % RDS_MAX_GROUPS;
-	return group_index[transmitter];
+	i2c_send_word(i2cbus, rds_register[block_index], (uint8_t *)&block[block_index]);
+	block_index = (block_index + 1) & 0x03;
+	if (!block_index)
+		group_index = (group_index + 1) % RDS_MAX_GROUPS;
+	return group_index;
 }

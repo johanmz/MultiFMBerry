@@ -41,6 +41,7 @@ int mcp23017_init_i2c (uint8_t bus)
     return 0;
 }
 
+// read which transmitter(s) have RDS_INT set, i.e. are ready to receive the next RDS block
 uint16_t mcp23017_read_trs_rdsstatus (int index)
 {
     char buf[2];
@@ -107,6 +108,3 @@ int mcp23017_init_INT ()
     }
     return 0;
 }
-
-
-  
