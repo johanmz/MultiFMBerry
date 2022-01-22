@@ -118,6 +118,32 @@ void ns741_init_reg(uint8_t nr_transmitters)
 		group_index[j]=0;
 		block_index[j]=0;
 		text_len[j]=1;
+
+		// tijdelijk
+		if (j==0)
+		{
+			rds_ps[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
+			rds_ps[j][1] = RDS_GT(0,0) | RDS_PTY(PTY_INFORM) | RDS_MS;
+			rds_ps[j][2] = 0xE0CD;
+			rds_ps[j][3] = 0;
+
+			rds_text[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
+			rds_text[j][1] = RDS_GT(2,0) | RDS_PTY(PTY_INFORM);
+			rds_text[j][2] = 0;
+			rds_text[j][3] = 0;
+		}
+		else
+		{
+			rds_ps[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
+			rds_ps[j][1] = RDS_GT(0,0) | RDS_PTY(PTY_INFORM) | RDS_MS;
+			rds_ps[j][2] = 0xE0CD;
+			rds_ps[j][3] = 0;
+
+			rds_text[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
+			rds_text[j][1] = RDS_GT(2,0) | RDS_PTY(PTY_INFORM);
+			rds_text[j][2] = 0;
+			rds_text[j][3] = 0;
+		}
 	}
 
 }
@@ -426,6 +452,8 @@ uint8_t ns741_rds_isr(uint8_t transmitter)
 		rds_debug++;
 	}
 
+	int t1= block_index[transmitter];
+	int t2=block[t1];
 	i2c_send_word(i2cbus, rds_register[block_index[transmitter]], (uint8_t *)&block[block_index[transmitter]]);
 	block_index[transmitter] = (block_index[transmitter] + 1) & 0x03;
 	if (!block_index[transmitter])

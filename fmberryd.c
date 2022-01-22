@@ -31,6 +31,7 @@
 #include <netinet/in.h>
 #include "defs.h"
 
+
 #define RPI_REVISION RPI_REV2
 
 
@@ -326,7 +327,7 @@ int main(int argc, char **argv)
 	int ledcounter = 0;
 	int intr_notfinished;
 	while(run) {
-		int testje = rpi_pin_get(17);
+		//int testje = rpi_pin_get(17);
 
 		// if new interrupts from transmitter came during the previous processing, first handle these
 		// if all done then wait for the next interrupt
@@ -353,15 +354,27 @@ int main(int argc, char **argv)
 					if (trs_rdsstatus & 0x0001)
 					{
 						transmitter = IOexpander_to_mmr70[j][k];
-						//tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
-						ns741_rds_isr(transmitter);
+						tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
+						ns741_rds_isr(0);
 					}
 					trs_rdsstatus >>= 1;
 				}
 				// while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run
-				IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
+				//IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
+				trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
+				trs_rdsstatus &= IOexpander[j].GPINTEN;
 			}
 		}
+
+		// if (poll(polls, nfds, 1000) < 0)
+		// 	break;
+
+		// if (polls[1].revents) {
+		// 	rpi_pin_poll_clear(polls[1].fd);
+		// 	ns741_rds_isr(0);
+
+		// }
+
 
 		// if (polls[0].revents)
 		// 	ProcessTCP(lst, &mmr70);

@@ -57,7 +57,7 @@ uint16_t mcp23017_read_trs_rdsstatus (int index)
     if (read(i2cbus, buf, 2) != 2)
         return -1;
     else
-        return buf;
+        return buf[0]+(buf[1]<<8);
 
 }
 
