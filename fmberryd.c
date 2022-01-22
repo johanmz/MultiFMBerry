@@ -320,6 +320,7 @@ int main(int argc, char **argv)
 		ns741_rds_isr(k); // send first two bytes
 	}
 
+	ns741_rds_debug(1);
 
 	// main polling loop
 	uint16_t trs_rdsstatus;
@@ -354,7 +355,19 @@ int main(int argc, char **argv)
 					if (trs_rdsstatus & 0x0001)
 					{
 						transmitter = IOexpander_to_mmr70[j][k];
-						tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
+						if (tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport) == -1)
+						{
+							int mplexport =  mmr70[transmitter].i2c_mplexport;
+							syslog(LOG_ERR, "Port switch tca9548a failed during RDS update\n");
+							exit(EXIT_FAILURE);							
+						}						
+						int port = tca9548a_read (mmr70[transmitter].i2c_mplexindex);
+						if (port != 1<<mmr70[transmitter].i2c_mplexport)
+						{
+							int mplexport =  mmr70[transmitter].i2c_mplexport;
+							syslog(LOG_ERR, "Port switch tca9548a failed during RDS update\n");
+							exit(EXIT_FAILURE);							
+						}
 						ns741_rds_isr(0);
 					}
 					trs_rdsstatus >>= 1;

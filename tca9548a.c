@@ -54,3 +54,15 @@ int tca9548a_select_port (uint8_t index, uint8_t port)
 	return 0;    
 
 }
+
+// for debug purposed
+int tca9548a_read (uint8_t index)
+{
+    int i2cbus = multiplexer[index].i2cbus;
+    char buf[1];										
+	
+    if ((read (i2cbus, buf, 1)) != 1) {
+		return -1;
+	}
+	return buf[0];   
+}
