@@ -26,7 +26,7 @@
 
 // I2C address of MMR-70
 static const int address = 0x66;
-static int i2cbus = -1;
+static int i2cbus[MAXNRTRANSMITTERS];
 
 #define NS741_DEFAULT_F 99800 // default F=99.80MHz
 
@@ -134,12 +134,12 @@ void ns741_init_reg(uint8_t nr_transmitters)
 		}
 		else
 		{
-			rds_ps[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
+			rds_ps[j][0] = RDS_PI(RDS_IRELAND,CAC_LOCAL,0);
 			rds_ps[j][1] = RDS_GT(0,0) | RDS_PTY(PTY_INFORM) | RDS_MS;
 			rds_ps[j][2] = 0xE0CD;
 			rds_ps[j][3] = 0;
 
-			rds_text[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
+			rds_text[j][0] = RDS_PI(RDS_IRELAND,CAC_LOCAL,0);
 			rds_text[j][1] = RDS_GT(2,0) | RDS_PTY(PTY_INFORM);
 			rds_text[j][2] = 0;
 			rds_text[j][3] = 0;
@@ -155,30 +155,35 @@ int ns741_init_i2c (uint8_t bus, uint8_t nr_transmitters)
 	int index;
 	int port;
 	// open the multiplexer to the first transmitter
-	index = mmr70[0].i2c_mplexindex;
-	port = mmr70[0].i2c_mplexport;
-	if (tca9548a_select_port(index, port) == -1)
-		return -1;
 	
 	// open the i2cbus for the transmitters, 0x66 
-	i2cbus = i2c_init(bus, address);
-	if ((i2cbus == -1) || (i2c_send(i2cbus, 0x00, 0x00) == -1))
-		return -1;
-	// reset register of first transmitter to default values
-	if (i2c_send_data(i2cbus, 0, ns741_reg[0], sizeof(ns741_reg[0])) == -1)
-		return -1;
-	
-	// initialise the remaining transmitters
-	for (int j = 1; j < nr_transmitters;j++)
+	for (int k=0;k<nr_transmitters;k++)
 	{
-		index = mmr70[j].i2c_mplexindex;
-		port = mmr70[j].i2c_mplexport;
+		index = mmr70[k].i2c_mplexindex;
+		port = mmr70[k].i2c_mplexport;
 		if (tca9548a_select_port(index, port) == -1)
 			return -1;
-		// reset registers to default values
-		if (i2c_send_data(i2cbus, 0, ns741_reg[j], sizeof(ns741_reg[j])) == -1)
+		
+		i2cbus[k]=-1;
+		i2cbus[k] = i2c_init(bus, address);
+		if ((i2cbus[k] == -1) || (i2c_send(i2cbus[k], 0x00, 0x00) == -1))
+			return -1;
+		// reset register of first transmitter to default values
+		if (i2c_send_data(i2cbus[k], 0, ns741_reg[k], sizeof(ns741_reg[k])) == -1)
 			return -1;
 	}
+	
+	// initialise the remaining transmitters
+	// for (int j = 1; j < nr_transmitters;j++)
+	// {
+	// 	index = mmr70[j].i2c_mplexindex;
+	// 	port = mmr70[j].i2c_mplexport;
+	// 	if (tca9548a_select_port(index, port) == -1)
+	// 		return -1;
+	// 	// reset registers to default values
+	// 	if (i2c_send_data(i2cbus, 0, ns741_reg[j], sizeof(ns741_reg[j])) == -1)
+	// 		return -1;
+	// }
 	return 0;
 }
 
@@ -208,7 +213,7 @@ void ns741_power(uint8_t transmitter, uint8_t on)
 	if (on)
 		reg |= 0x01; // power is active
 
-	i2c_send(i2cbus, 0x00, reg);
+	i2c_send(i2cbus[transmitter], 0x00, reg);
 	ns741_reg[transmitter][0] = reg;
 	return;
 }
@@ -232,7 +237,7 @@ void ns741_stereo(uint8_t transmitter, uint8_t on)
 	}
 	
 	ns741_reg[transmitter][1] = reg;
-	i2c_send(i2cbus, 0x01, reg);
+	i2c_send(i2cbus[transmitter], 0x01, reg);
 	return;
 }
 
@@ -250,7 +255,7 @@ void ns741_mute(uint8_t transmitter, uint8_t on)
 	else
 		reg &= ~1;
 
-	i2c_send(i2cbus, 0x02, reg);
+	i2c_send(i2cbus[transmitter], 0x02, reg);
 	ns741_reg[transmitter][2] = reg;
 	return;
 }
@@ -263,7 +268,7 @@ void ns741_txpwr(uint8_t transmitter, uint8_t strength)
 	strength &= 0x03; // just in case normalize strength
 	reg |= (strength << 6);
 
-	i2c_send(i2cbus, 0x02, reg);
+	i2c_send(i2cbus[transmitter], 0x02, reg);
 	ns741_reg[transmitter][2] = reg;
 	return;
 }
@@ -276,13 +281,13 @@ void ns741_set_frequency(uint8_t transmitter, uint32_t f_khz)
 
 	// it is recommended to mute transmitter before changing frequency
 	uint8_t reg = ns741_reg[transmitter][2];
-	i2c_send(i2cbus, 0x02, reg | 0x01);
+	i2c_send(i2cbus[transmitter], 0x02, reg | 0x01);
 
-	i2c_send(i2cbus, 0x0A, val);
-	i2c_send(i2cbus, 0x0B, val >> 8);
+	i2c_send(i2cbus[transmitter], 0x0A, val);
+	i2c_send(i2cbus[transmitter], 0x0B, val >> 8);
 
 	// restore previous mute state
-	i2c_send(i2cbus, 0x02, reg);
+	i2c_send(i2cbus[transmitter], 0x02, reg);
 	return;
 }
 
@@ -296,7 +301,7 @@ void ns741_volume(uint8_t transmitter, uint8_t gain)
 	reg |= gain << 1;
 	ns741_reg[transmitter][0x0D] = reg;
 
-	i2c_send(i2cbus, 0x0D, reg);
+	i2c_send(i2cbus[transmitter], 0x0D, reg);
 }
 
 // set input gain -9dB on/off
@@ -309,7 +314,7 @@ void ns741_input_gain(uint8_t transmitter, uint8_t on)
 	else
 		reg &= ~0x40;
 	ns741_reg[transmitter][0x0F] = reg;
-	i2c_send(i2cbus, 0x0F, reg);
+	i2c_send(i2cbus[transmitter], 0x0F, reg);
 }
 
 // register 0x10 controls RDS:
@@ -326,7 +331,7 @@ void ns741_rds(uint8_t transmitter, uint8_t on)
 		reg &= ~0x40;
 
 	ns741_reg[transmitter][0x10] = reg;
-	i2c_send(i2cbus, 0x10, reg);
+	i2c_send(i2cbus[transmitter], 0x10, reg);
 	return;
 }
 
@@ -339,7 +344,7 @@ void ns741_rds_cp(uint8_t transmitter, uint8_t cp)
 	else
 		reg &= 0x7F;
 	ns741_reg[transmitter][0x0F] = reg;
-	i2c_send(i2cbus, 0x0F, reg);
+	i2c_send(i2cbus[transmitter], 0x0F, reg);
 	return;
 }
 
@@ -405,16 +410,16 @@ void ns741_rds_set_progname(uint8_t transmitter, const char *text)
 uint8_t ns741_rds_isr(uint8_t transmitter)
 {
 	uint8_t *data;
-	static uint16_t *block;
+	static uint16_t *block[MAXNRTRANSMITTERS];
 
 	if (block_index[transmitter] == 0) {
 		if (group_index[transmitter] > 3) {
 			uint8_t i = (group_index[transmitter] - 4) << 2;
 			if (i < text_len[transmitter]) {
-				block = rds_text[transmitter];
-				block[1] &= ~RDS_RTIM;
-				block[1] |= group_index[transmitter] - 4;
-				data = (uint8_t *)&block[2];
+				block[transmitter] = rds_text[transmitter];
+				block[transmitter][1] &= ~RDS_RTIM;
+				block[transmitter][1] |= group_index[transmitter] - 4;
+				data = (uint8_t *)&block[transmitter][2];
 				data[1] = radiotext[transmitter][i];
 				data[0] = radiotext[transmitter][i+1];
 				data[3] = radiotext[transmitter][i+2];
@@ -429,10 +434,10 @@ uint8_t ns741_rds_isr(uint8_t transmitter)
 		if (group_index[transmitter] < 4) {
 			if ((group_index[transmitter] == 0) && (rds_debug & 0x80))
 				rds_debug = 0;
-			block = rds_ps[transmitter];
-			block[1] &= ~RDS_PSIM;
-			block[1] |= group_index[transmitter];
-			data = (uint8_t *)&block[3];
+			block[transmitter] = rds_ps[transmitter];
+			block[transmitter][1] &= ~RDS_PSIM;
+			block[transmitter][1] |= group_index[transmitter];
+			data = (uint8_t *)&block[transmitter][3];
 			uint8_t i = group_index[transmitter] << 1; // 0,2,4,6
 			data[1] = ps_name[transmitter][i];
 			data[0] = ps_name[transmitter][i+1];
@@ -441,20 +446,26 @@ uint8_t ns741_rds_isr(uint8_t transmitter)
 		// ns741_rds_cp((block[1] & 0x0800) >> 8);
 	}
 
+	int b1= block_index[transmitter];
+	int g1= group_index[transmitter];
+	// int b2=block[b1];
+	// uint8_t *b3 = &block[block_index[transmitter]];
+	// int d1=b3[1];
+	// int d0=b3[0];
+
+
 	if (rds_debug < rds_debug_max) {
-		data = (uint8_t *)&block[block_index[transmitter]];
+		data = (uint8_t *)&block[transmitter][block_index[transmitter]];
 		if (block_index[transmitter] == 0)
-			printf("%2d %02X%02X", group_index, data[1], data[0]);
+			printf("T%2d %2d %02X%02X", group_index[transmitter],  transmitter, data[1], data[0]);
 		else 
-			printf(" %02X%02X", data[1], data[0]);
+			printf(" t%2d %02X%02X", transmitter, data[1], data[0]);
 		if (block_index[transmitter] == 3)
 			printf("\n");
 		rds_debug++;
 	}
 
-	int t1= block_index[transmitter];
-	int t2=block[t1];
-	i2c_send_word(i2cbus, rds_register[block_index[transmitter]], (uint8_t *)&block[block_index[transmitter]]);
+	i2c_send_word(i2cbus[transmitter], rds_register[block_index[transmitter]], (uint8_t *)&block[transmitter][block_index[transmitter]]);
 	block_index[transmitter] = (block_index[transmitter] + 1) & 0x03;
 	if (!block_index[transmitter])
 		group_index[transmitter] = (group_index[transmitter] + 1) % RDS_MAX_GROUPS;

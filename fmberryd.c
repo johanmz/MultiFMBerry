@@ -289,6 +289,7 @@ int main(int argc, char **argv)
 		// nog maken functies voor rdspi en rdspty
 	}
 
+	ns741_rds_debug(1);
 	uint16_t xy = mcp23017_read_trs_rdsstatus(0); 
 	// Use RPI_REV1 for earlier versions of Raspberry Pi
 	rpi_pin_init(RPI_REVISION);
@@ -309,9 +310,11 @@ int main(int argc, char **argv)
 		polls[j+1].events = POLLPRI;
 		nfds = 1+nr_IOexpanders;
 	}
+
+
 	for (int k=0;k<nr_transmitters;k++)
 	{
-		if (tca9548a_select_port(k,mmr70[k].i2c_mplexport) == -1)
+		if (tca9548a_select_port(mmr70[k].i2c_mplexindex,mmr70[k].i2c_mplexport) == -1)
 		{
 			syslog(LOG_ERR, "Could not switch tca9548a\n");
 			exit(EXIT_FAILURE);
@@ -320,7 +323,6 @@ int main(int argc, char **argv)
 		ns741_rds_isr(k); // send first two bytes
 	}
 
-	ns741_rds_debug(1);
 
 	// main polling loop
 	uint16_t trs_rdsstatus;
@@ -328,7 +330,31 @@ int main(int argc, char **argv)
 	int ledcounter = 0;
 	int intr_notfinished;
 	while(run) {
-		//int testje = rpi_pin_get(17);
+		
+		// for (int j = 0; j<nr_IOexpanders;j++)
+		// {
+		// 	trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
+		// 	trs_rdsstatus &= IOexpander[j].GPINTEN;
+		// 	for (int k=0;k<16;k++)
+		// 	{
+		// 		if (trs_rdsstatus & 0x0001)
+		// 		{
+		// 			transmitter = IOexpander_to_mmr70[j][k];
+		// 			if (tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport) == -1)
+		// 			{
+		// 				syslog(LOG_ERR, "Port switch tca9548a failed during RDS update\n");
+		// 				exit(EXIT_FAILURE);	
+		// 			}
+		// 			else
+		// 			{
+		// 				ns741_rds_isr(transmitter);
+		// 			}
+		// 		}
+		// 		trs_rdsstatus >>= 1;
+		// 	}
+		// }
+			
+
 
 		// if new interrupts from transmitter came during the previous processing, first handle these
 		// if all done then wait for the next interrupt
@@ -341,12 +367,12 @@ int main(int argc, char **argv)
 				break;
 			}
 		if (!intr_notfinished) 
-			if (poll(polls, nfds, 1000) < 0)
+			if (poll(polls, nfds, 25) < 0)
 				break;
 
 		for (int j=0;j<nr_IOexpanders;j++)
 		{
-			if (polls[j+1].revents || IOexpander[j].intr_notfinished) {
+			if (polls[j+1].revents || intr_notfinished) {
 				rpi_pin_poll_clear(polls[j+1].fd);
 				trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
 				trs_rdsstatus &= IOexpander[j].GPINTEN;
@@ -355,27 +381,20 @@ int main(int argc, char **argv)
 					if (trs_rdsstatus & 0x0001)
 					{
 						transmitter = IOexpander_to_mmr70[j][k];
-						if (tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport) == -1)
-						{
-							int mplexport =  mmr70[transmitter].i2c_mplexport;
-							syslog(LOG_ERR, "Port switch tca9548a failed during RDS update\n");
-							exit(EXIT_FAILURE);							
-						}						
-						int port = tca9548a_read (mmr70[transmitter].i2c_mplexindex);
-						if (port != 1<<mmr70[transmitter].i2c_mplexport)
-						{
-							int mplexport =  mmr70[transmitter].i2c_mplexport;
-							syslog(LOG_ERR, "Port switch tca9548a failed during RDS update\n");
-							exit(EXIT_FAILURE);							
-						}
-						ns741_rds_isr(0);
+						tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
+						ns741_rds_isr(transmitter);
 					}
 					trs_rdsstatus >>= 1;
 				}
-				// while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run
-				//IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
-				trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
-				trs_rdsstatus &= IOexpander[j].GPINTEN;
+				//while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run
+				IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
+				// trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
+				// trs_rdsstatus &= IOexpander[j].GPINTEN;
+				// if (trs_rdsstatus)
+				// 	IOexpander[j].intr_notfinished = 1;
+				// else
+				// 	IOexpander[j].intr_notfinished  = 0;
+			 
 			}
 		}
 
