@@ -119,7 +119,7 @@ void ns741_init_reg(uint8_t nr_transmitters)
 		block_index[j]=0;
 		text_len[j]=1;
 
-		// tijdelijk
+		// TODO tijdelijk
 		if (j==0)
 		{
 			rds_ps[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
@@ -446,22 +446,9 @@ uint8_t ns741_rds_isr(uint8_t transmitter)
 		// ns741_rds_cp((block[1] & 0x0800) >> 8);
 	}
 
-	int b1= block_index[transmitter];
-	int g1= group_index[transmitter];
-	// int b2=block[b1];
-	// uint8_t *b3 = &block[block_index[transmitter]];
-	// int d1=b3[1];
-	// int d0=b3[0];
-
-
 	if (rds_debug < rds_debug_max) {
 		data = (uint8_t *)&block[transmitter][block_index[transmitter]];
-		if (block_index[transmitter] == 0)
-			printf("T%2d %2d %02X%02X", group_index[transmitter],  transmitter, data[1], data[0]);
-		else 
-			printf(" t%2d %02X%02X", transmitter, data[1], data[0]);
-		if (block_index[transmitter] == 3)
-			printf("\n");
+		printf("T%02d G%02d B%02d  %02X%02X\n", transmitter, group_index[transmitter],  block_index[transmitter], data[1], data[0]);
 		rds_debug++;
 	}
 

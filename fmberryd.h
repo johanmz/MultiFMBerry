@@ -22,6 +22,7 @@
 
 typedef struct _mmr70_data
 {
+	char name[34];
 	int frequency;
 	int power;
 	int mute;
@@ -69,5 +70,6 @@ int str_is(const char *str, const char *is);
 int str_is_arg(const char *str, const char *is, const char **arg);
 
 int ListenTCP(uint16_t port);
-int ProcessTCP(int sock, mmr70_data_t *pdata);
+// int ProcessTCP(int sock, mmr70_data_t *pdata);
+int ProcessTCP(int sock);
 #endif

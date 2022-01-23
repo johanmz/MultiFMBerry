@@ -34,6 +34,7 @@
 
 #define RPI_REVISION RPI_REV2
 
+///TODO: omgaan met geen RDS in config voor transmitter
 
 // RDS interrupt pin
 int rdsint;
@@ -50,16 +51,17 @@ static volatile int run = 1;
 static int start_daemon = 1;
 
 static int IOexpander_to_mmr70[MAXIOEXPANDERS][16]; // lookup which transmitter belongs to which mcp23017 por, in handling rds interupts
+static int nr_transmitters =0; 
 
 int main(int argc, char **argv)
 {
 	//Check if user == root
-/*	if(geteuid() != 0)
-	{
-	  puts("Please run this software as root!");
-	  exit(EXIT_FAILURE);
-	}
-*/
+	// if(geteuid() != 0)
+	// {
+	//   puts("Please run this software as root!");
+	//   exit(EXIT_FAILURE);
+	// }
+
 	// check for non-daemon mode for debugging
 	for(int i = 1; i < argc; i++) {
 		if (str_is(argv[i], "nodaemon")) {
@@ -73,12 +75,10 @@ int main(int argc, char **argv)
 		pid_t pid;
 
 		pid = fork();
-		if (pid < 0)
-		{
+		if (pid < 0) {
 			exit(EXIT_FAILURE);
 		}
-		if (pid > 0)
-		{
+		if (pid > 0) {
 			exit(EXIT_SUCCESS);
 		}
 
@@ -89,14 +89,12 @@ int main(int argc, char **argv)
 
 		pid_t sid;
 		sid = setsid();
-		if (sid < 0)
-		{
+		if (sid < 0) {
 			syslog(LOG_ERR, "Could not create process group\n");
 			exit(EXIT_FAILURE);
 		}
 
-		if ((chdir("/")) < 0)
-		{
+		if ((chdir("/")) < 0) {
 			syslog(LOG_ERR, "Could not change working directory to /\n");
 			exit(EXIT_FAILURE);
 		}
@@ -106,9 +104,8 @@ int main(int argc, char **argv)
 		openlog(argv[0],LOG_NOWAIT|LOG_PID,LOG_USER);
 	}
 
-//Read configuration file
-	cfg_opt_t transmitter_opts[] =
-		{
+	//Read configuration file
+	cfg_opt_t transmitter_opts[] = {
 			CFG_STR_LIST("transmitter", "{1}", CFGF_NONE),
 			CFG_INT("frequency", 99800, CFGF_NONE),
 			CFG_BOOL("stereo", 1, CFGF_NONE),
@@ -125,16 +122,16 @@ int main(int argc, char **argv)
 			CFG_INT("i2cmultiplexerport", 0, CFGF_NONE),
 			CFG_STR("IOexpanderconfig", "1_Aports", CFGF_NONE),
 			CFG_INT("IOexpanderport",0, CFGF_NONE),
-			CFG_END()};
+			CFG_END()
+		};
 
-	cfg_opt_t IOexpander_opts[]=
-		{	CFG_STR_LIST("IOexpander", "{1_Aports}", CFGF_NONE),
+	cfg_opt_t IOexpander_opts[]= {	CFG_STR_LIST("IOexpander", "{1_Aports}", CFGF_NONE),
 			CFG_INT("IOexpanderaddress", 0x20, CFGF_NONE),
 			CFG_INT("IOinterruptpin", 17, CFGF_NONE),
-			CFG_END()};
+			CFG_END()}
+		;
 
-	cfg_opt_t opts[] =
-		{
+	cfg_opt_t opts[] = {
 			CFG_INT("i2cbus", 1, CFGF_NONE),
 			CFG_BOOL("tcpbindlocal", 1, CFGF_NONE),
 			CFG_INT("tcpport", 42516, CFGF_NONE),
@@ -142,7 +139,8 @@ int main(int argc, char **argv)
 			CFG_INT("ledpin", 27, CFGF_NONE),
 			CFG_SEC("transmitter", transmitter_opts, CFGF_TITLE | CFGF_MULTI),
 			CFG_SEC("IOexpander", IOexpander_opts, CFGF_TITLE | CFGF_MULTI),
-			CFG_END()};
+			CFG_END()
+		};
 
 	cfg = cfg_init(opts, CFGF_NONE);
 	if (cfg_parse(cfg, "/home/pi/git/FMBerry/fmberry.conf") == CFG_PARSE_ERROR)
@@ -155,19 +153,19 @@ int main(int argc, char **argv)
 
 	int nfds;
 	struct pollfd  polls[MAXIOEXPANDERS+1]; //+1 for the tcp polling
-/*
-	// open TCP listener socket, will exit() in case of error
+
+	//open TCP listener socket, will exit() in case of error
+	int tcpport = cfg_getint(cfg, "tcpport");
 	int lst = ListenTCP(cfg_getint(cfg, "tcpport"));
 	polls[0].fd = lst;
 	polls[0].events = POLLIN;
 	nfds = 1;
-*/
+
 
 	// read IOexpander data from config
 	int nr_IOexpanders =  cfg_size(cfg, "IOexpander");
 	bzero(&IOexpander, sizeof(IOexpander));
-	for (int k=0; k < nr_IOexpanders; k++)
-	{
+	for (int k=0; k < nr_IOexpanders; k++) {
 		cfg_IOexpander 				= cfg_getnsec(cfg, "IOexpander", k);
 		strncpy(IOexpander[k].id, cfg_title(cfg_IOexpander), 12);
 		IOexpander[k].address 		= cfg_getint (cfg_IOexpander, "IOexpanderaddress");
@@ -175,10 +173,11 @@ int main(int argc, char **argv)
 	}
 
 	// initialize data structure for 'status' command
-	int nr_transmitters = cfg_size(cfg, "transmitter");
+	nr_transmitters = cfg_size(cfg, "transmitter");
 	bzero(&mmr70, sizeof(mmr70));
-	for (int j = 0; j < nr_transmitters; j++)
-	{	cfg_transmitter 			= cfg_getnsec(cfg, "transmitter", j);
+	for (int j = 0; j < nr_transmitters; j++) {	
+		cfg_transmitter 			= cfg_getnsec(cfg, "transmitter", j);
+		strncpy(mmr70[j].name, cfg_title(cfg_transmitter), 32);
 		mmr70[j].frequency 			= cfg_getint(cfg_transmitter, "frequency");
 		mmr70[j].power 				= cfg_getbool(cfg_transmitter, "poweron");
 		mmr70[j].txpower 			= cfg_getint(cfg_transmitter, "txpower");
@@ -196,13 +195,11 @@ int main(int argc, char **argv)
 		strncpy(mmr70[j].IOexpanderconfig, cfg_getstr(cfg_transmitter, "IOexpanderconfig"), 12);
 		mmr70[j].IOexpanderindex = -1;
 		for (int k =0; k<nr_IOexpanders;k++)
-			if (!strcmp(IOexpander[k].id, mmr70[j].IOexpanderconfig))
-			{
+			if (!strcmp(IOexpander[k].id, mmr70[j].IOexpanderconfig)) {
 				mmr70[j].IOexpanderindex = k;
 				break;
 			}
-		if (mmr70[j].IOexpanderindex == -1)
-		{
+		if (mmr70[j].IOexpanderindex == -1) {
 			syslog(LOG_ERR, "Error with matching IOExpander config for transmitter with IOexpander config section. Correct .conf file. \n");
 			exit(EXIT_FAILURE);
 		}
@@ -224,18 +221,15 @@ int main(int argc, char **argv)
 	for (int j = 0; j < nr_transmitters; j++)
 	{
 		mplex_found = -1;
-		for (int k=0; k < MAXMULTIPLEXERS; k++)
-		{
-			if (multiplexer[k].address == mmr70[j].i2c_mplexaddress)
-			{	
+		for (int k=0; k < MAXMULTIPLEXERS; k++) {
+			if (multiplexer[k].address == mmr70[j].i2c_mplexaddress) {	
 				mplex_found = k;
 				break;
 			}
 		}
 		if (mplex_found != -1)
 			mmr70[j].i2c_mplexindex = mplex_found;
-		else
-		{
+		else {
 			mplexindex++;
 			multiplexer[mplexindex].address=mmr70[j].i2c_mplexaddress;
 			mmr70[j].i2c_mplexindex = mplexindex;
@@ -247,24 +241,21 @@ int main(int argc, char **argv)
 	ns741_init_reg(nr_transmitters);
 
 	// initialize all tca9548a multiplexer i2c busses
-	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus"))==-1)
-	{
+	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus"))==-1) {
 		syslog(LOG_ERR, "Init of TCA9548A multiplexer(s) failed! Double-check hardware and .conf and try again!\n");
 		exit(EXIT_FAILURE);
 	}
 	syslog(LOG_NOTICE, "Successfully initialized i2c bus for TCA9548A multiplexer(s).\n");
 
 	// init I2C bus for the mcp23017 IC expander(s)
-	if (mcp23017_init_i2c(cfg_getint(cfg, "i2cbus")) == -1 || mcp23017_init_INT()==-1)
-	{
+	if (mcp23017_init_i2c(cfg_getint(cfg, "i2cbus")) == -1 || mcp23017_init_INT()==-1) {
 		syslog(LOG_ERR, "Init of mcp23017 IO expander(s) failed! Double-check hardware and .conf and try again!\n");
 		exit(EXIT_FAILURE);
 	}
 	syslog(LOG_NOTICE, "Successfully initialized i2c bus for mcp23017 IO expander(s)\n");
 
 	// init I2C bus and transmitters with initial frequency and state
-	if (ns741_init_i2c(cfg_getint(cfg, "i2cbus"), nr_transmitters) == -1)
-	{
+	if (ns741_init_i2c(cfg_getint(cfg, "i2cbus"), nr_transmitters) == -1) {
 		syslog(LOG_ERR, "Init of transmitters failed! Double-check hardware and .conf and try again!\n");
 		exit(EXIT_FAILURE);
 	}
@@ -272,8 +263,7 @@ int main(int argc, char **argv)
 
 
 	// apply configuration parameters
-	for (int j = 0; j< nr_transmitters; j++)
-	{
+	for (int j = 0; j< nr_transmitters; j++) {
 		// enable the transmitter i2c port on the tca9548a 
 		tca9548a_select_port(mmr70[j].i2c_mplexindex, mmr70[j].i2c_mplexport);
 		// and set the parameters on the transmitter
@@ -290,13 +280,11 @@ int main(int argc, char **argv)
 	}
 
 	ns741_rds_debug(1);
-	uint16_t xy = mcp23017_read_trs_rdsstatus(0); 
 	// Use RPI_REV1 for earlier versions of Raspberry Pi
 	rpi_pin_init(RPI_REVISION);
 
 	int rds;
-	for (int j=0;j < nr_IOexpanders;j++)
-	{
+	for (int j=0;j < nr_IOexpanders;j++) {
 		// Get file descriptor for RDS handler
 		polls[j+1].revents = 0;
 		rdsint=IOexpander[j].interruptpin;
@@ -312,17 +300,15 @@ int main(int argc, char **argv)
 	}
 
 
-	for (int k=0;k<nr_transmitters;k++)
-	{
-		if (tca9548a_select_port(mmr70[k].i2c_mplexindex,mmr70[k].i2c_mplexport) == -1)
-		{
+	for (int k=0;k<nr_transmitters;k++) {
+		if (tca9548a_select_port(mmr70[k].i2c_mplexindex,mmr70[k].i2c_mplexport) == -1) {
 			syslog(LOG_ERR, "Could not switch tca9548a\n");
 			exit(EXIT_FAILURE);
 		}
 		ns741_rds(k, mmr70[k].rds);
 		ns741_rds_isr(k); // send first two bytes
 	}
-
+	
 
 	// main polling loop
 	uint16_t trs_rdsstatus;
@@ -331,6 +317,7 @@ int main(int argc, char **argv)
 	int intr_notfinished;
 	while(run) {
 		
+		// alternative loop to run without interrupts, however this fully saturates the i2c bus
 		// for (int j = 0; j<nr_IOexpanders;j++)
 		// {
 		// 	trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
@@ -359,10 +346,9 @@ int main(int argc, char **argv)
 		// if new interrupts from transmitter came during the previous processing, first handle these
 		// if all done then wait for the next interrupt
 		// note that the interruptpin of the mcp20317 will only return to high if there are no more MRR70's with the interrupt low AND the GPIO register of the MCP23017 is read
-		intr_notfinished = 0;
+		intr_notfinished = 99;
 		for (int j = 0; j<nr_IOexpanders;j++)
-			if (IOexpander[j].intr_notfinished)
-			{
+			if (IOexpander[j].intr_notfinished) {
 				intr_notfinished = 1;
 				break;
 			}
@@ -372,52 +358,39 @@ int main(int argc, char **argv)
 
 		for (int j=0;j<nr_IOexpanders;j++)
 		{
-			if (polls[j+1].revents || intr_notfinished) {
-				rpi_pin_poll_clear(polls[j+1].fd);
+			if (polls[j+1].revents || IOexpander[j].intr_notfinished || intr_notfinished == 99) {
+				//TODO DEZE POLL CLEAR WEG?
+				//rpi_pin_poll_clear(polls[j+1].fd);
 				trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
 				trs_rdsstatus &= IOexpander[j].GPINTEN;
-				for (int k=0;k<16;k++)
-				{
-					if (trs_rdsstatus & 0x0001)
-					{
+				for (int k=0;k<16;k++) {
+					if (trs_rdsstatus & 0x0001) {
 						transmitter = IOexpander_to_mmr70[j][k];
 						tca9548a_select_port (mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 						ns741_rds_isr(transmitter);
 					}
 					trs_rdsstatus >>= 1;
 				}
-				//while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run
+				//while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run. This also clears the intrrupt pin
 				IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
-				// trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
-				// trs_rdsstatus &= IOexpander[j].GPINTEN;
-				// if (trs_rdsstatus)
-				// 	IOexpander[j].intr_notfinished = 1;
-				// else
-				// 	IOexpander[j].intr_notfinished  = 0;
 			 
 			}
 		}
 
-		// if (poll(polls, nfds, 1000) < 0)
-		// 	break;
-
-		// if (polls[1].revents) {
-		// 	rpi_pin_poll_clear(polls[1].fd);
-		// 	ns741_rds_isr(0);
-
-		// }
-
-
-		// if (polls[0].revents)
-		// 	ProcessTCP(lst, &mmr70);
-
-
+		if (polls[0].revents)
+			 ProcessTCP(lst);
+			// ProcessTCP(lst, &mmr70);
 	}
 
-/*	// clean up at exit
-	ns741_power(0);
-	if (mmr70.rds)
-		rpi_pin_unexport(rdsint);
+	//clean up at exit
+	for (int j=0;j<nr_transmitters;j++)
+		ns741_power(transmitter, 0);
+	
+	for (int j=0;j<nr_transmitters;j++)
+		if (mmr70[j].rds) {
+			rpi_pin_unexport(rdsint);
+			break;
+		}
 
 	if (ledpin > 0) {
 		rpi_pin_set(ledpin, 0);
@@ -429,6 +402,7 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
 
 int ListenTCP(uint16_t port)
 {
@@ -475,13 +449,17 @@ int ListenTCP(uint16_t port)
 // for 'status' command
 static float txpower[4] = { 0.5, 0.8, 1.0, 2.0 };
 
-int ProcessTCP(int sock, mmr70_data_t *pdata)
+// int ProcessTCP(int sock, mmr70_data_t *pdata)
+int ProcessTCP(int sock)
 {
 	// Puffer und Strukturen anlegen
 	struct sockaddr_in clientaddr;
 	socklen_t clen = sizeof(clientaddr);
-	char buffer[512];
-	bzero(buffer, sizeof(buffer));
+	char arg_buffer[512];
+	bzero(arg_buffer, sizeof(arg_buffer));
+	char full_buffer[512];
+	bzero(full_buffer, sizeof(full_buffer));
+	
 
 	// Auf Verbindung warten, bei Verbindung Connected-Socket erstellen 
 	int csd = accept(sock, (struct sockaddr *)&clientaddr, &clen);
@@ -496,175 +474,253 @@ int ProcessTCP(int sock, mmr70_data_t *pdata)
 		return -1;
 	}
 
-	int len  = recv(csd, buffer, sizeof(buffer) - 2, 0);
-	buffer[len] = '\0';
-	char *end = buffer + len - 1;
+	int len  = recv(csd, full_buffer, sizeof(full_buffer) - 2, 0);
+	full_buffer[len] = '\0';
+	char *end = full_buffer + len - 1;
 	// remove any trailing spaces
-	while((end != buffer) && (*end <= ' ')) {
+	while((end != full_buffer) && (*end <= ' ')) {
 		*end-- = '\0';
 	}
 
-	do {
-		const char *arg;
-
-		if (str_is_arg(buffer, "set freq", &arg))
-		{
-			int frequency = atoi(arg);
-
-			if ((frequency >= 76000) && (frequency <= 108000))
-			{
-				syslog(LOG_NOTICE, "Changing frequency...\n");
-				ns741_set_frequency(frequency);
-				pdata->frequency = frequency;
+	// read for which transmitter(s) the command needs to be executed
+	// format ctlberry transmitter1,transmitter2,...|all action
+	int do_fortransmitter[MAXTRANSMITTERS]; 
+	bzero(do_fortransmitter, sizeof(do_fortransmitter));
+	if (strncmp(full_buffer, "all", 3)) {
+		for (int j = 0; j<<nr_transmitters;j++)
+			do_fortransmitter[j]=1;
+	}
+	else {
+		char * token = strtok(full_buffer, " ");
+		if (token != NULL) {
+			char * ctoken = strtok(full_buffer, ",");
+			if (ctoken == NULL) {
+				for (int k=0; k<nr_transmitters;k++)
+					if (mmr70[k].name == token) {
+						do_fortransmitter[k]=1;
+						break;
+					}
 			}
-			else
-			{
-				syslog(LOG_NOTICE, "Bad frequency.\n");
+			else {
+				while (ctoken != NULL) {
+					for (int k=0; k<nr_transmitters;k++)
+						if (mmr70[k].name == ctoken)
+							do_fortransmitter[k]=1;
+					ctoken = strtok(NULL, ",");
+				}
 			}
-			break;
 		}
+	}
 
-		if (str_is(buffer, "poweroff"))
-		{
-			ns741_power(0);
-			pdata->power = 0;
-			break;
-		}
+	int transmittersspecified = 0;
+	for (int j=1;j>nr_transmitters;j++)
+		transmittersspecified++;
+	if (!transmittersspecified)
+		printf ("Transmitters missing. Use: cltfmberry transmitter1[,transmitter..]|all <command>\n");
 
-		if (str_is(buffer, "poweron"))
-		{
-			ns741_power(1);
-			ns741_rds(1);
-			ns741_rds_reset_radiotext();
-			pdata->power = 1;
-			break;
-		}
 
-		if (str_is(buffer, "muteon"))
-		{
-			ns741_mute(1);
-			pdata->mute = 1;
-			break;
-		}
 
-		if (str_is(buffer, "muteoff"))
-		{
-			ns741_mute(0);
-			pdata->mute = 0;
-			break;
-		}
+	int i=0;
+	while (full_buffer[i++] != ' ');
+	strncpy(arg_buffer, full_buffer+i, sizeof(arg_buffer)-i);
 
-		if (str_is(buffer, "gainlow"))
-		{
-			ns741_input_gain(1);
-			pdata->gain = 1;
-			break;
-		}
 
-		if (str_is(buffer, "gainoff"))
-		{
-			ns741_input_gain(0);
-			pdata->gain = 0;
-			break;
-		}
+	for (int transmitter=0;transmitter<nr_transmitters;transmitter++) {
+		do {
+			const char *arg;
 
-		if (str_is_arg(buffer, "set volume", &arg))
-		{
-			int volume = atoi(arg);
+			if (do_fortransmitter[transmitter]) {
+				if (str_is_arg(arg_buffer, "set freq", &arg))
+				{
+					int frequency = atoi(arg);
 
-			if ((volume >= 0) && (volume <= 6))
-			{
-				syslog(LOG_NOTICE, "Changing volume level...\n");
-				ns741_volume(volume);
-				pdata->volume = volume;
+					if ((frequency >= 76000) && (frequency <= 108000))
+					{
+						syslog(LOG_NOTICE, "Changing frequency...\n");
+						ns741_set_frequency(transmitter,frequency);
+						mmr70[transmitter].frequency = frequency;
+						//pdata->frequency = frequency;
+					}
+					else
+					{
+						syslog(LOG_NOTICE, "Bad frequency.\n");
+					}
+					break;
+				}
+
+				if (str_is(arg_buffer, "poweroff"))
+				{
+					ns741_power(transmitter,0);
+					mmr70[transmitter].power = 0;
+					// pdata->power = 0;
+					break;
+				}
+
+				if (str_is(arg_buffer, "poweron"))
+				{
+					ns741_power(transmitter,1);
+					ns741_rds(transmitter,1);
+					ns741_rds_reset_radiotext(transmitter);
+					mmr70[transmitter].power = 1;
+					// pdata->power = 1;
+					break;
+				}
+
+				if (str_is(arg_buffer, "muteon"))
+				{
+					ns741_mute(transmitter,1);
+					// pdata->mute = 1;
+					mmr70[transmitter].mute = 1;
+					break;
+				}
+
+				if (str_is(arg_buffer, "muteoff"))
+				{
+					ns741_mute(transmitter, 0);
+					// pdata->mute = 0;
+					mmr70[transmitter].mute = 0;
+					break;
+				}
+
+				if (str_is(arg_buffer, "gainlow"))
+				{
+					ns741_input_gain(transmitter,1);
+					// pdata->gain = 1;
+					mmr70[transmitter].gain = 1;
+					break;
+				}
+
+				if (str_is(arg_buffer, "gainoff"))
+				{
+					ns741_input_gain(transmitter,0);
+					// pdata->gain = 0;
+					mmr70[transmitter].gain = 0;
+					break;
+				}
+
+				if (str_is_arg(arg_buffer, "set volume", &arg))
+				{
+					int volume = atoi(arg);
+
+					if ((volume >= 0) && (volume <= 6))
+					{
+						syslog(LOG_NOTICE, "Changing volume level...\n");
+						ns741_volume(transmitter,volume);
+						// pdata->volume = volume;
+						mmr70[transmitter].volume = volume;
+					}
+					else
+					{
+						syslog(LOG_NOTICE, "Bad volume level. Range 0-6\n");
+					}
+					break;
+				}
+
+				if (str_is_arg(arg_buffer, "set stereo", &arg))
+				{
+					if (str_is(arg, "on"))
+					{
+						syslog(LOG_NOTICE, "Enabling stereo signal...\n");
+						ns741_stereo(transmitter, 1);
+						// pdata->stereo = 1;
+						mmr70[transmitter].stereo = 1;
+						break;
+					}
+					if (str_is(arg, "off"))
+					{
+						syslog(LOG_NOTICE, "Disabling stereo signal...\n");
+						ns741_stereo(transmitter, 0);
+						// pdata->stereo = 0;
+						mmr70[transmitter].stereo = 0;
+					}
+					break;
+				}
+
+				if (str_is_arg(arg_buffer, "set txpwr", &arg))
+				{
+					int txpwr = atoi(arg);
+
+					if ((txpwr >= 0) && (txpwr <= 3))
+					{
+						syslog(LOG_NOTICE, "Changing transmit power...\n");
+						ns741_txpwr(transmitter, txpwr);
+						// pdata->txpower = txpwr;
+						mmr70[transmitter].txpower = txpwr;
+					}
+					else
+					{
+						syslog(LOG_NOTICE, "Bad transmit power. Range 0-3\n");
+					}
+					break;
+				}
+
+				if (str_is_arg(arg_buffer, "set rdstext", &arg))
+				{
+					// strncpy(pdata->rdstext, arg, 64);
+					// ns741_rds_set_radiotext(pdata->rdstext);
+					strncpy (mmr70[transmitter].rdstext, arg, 64);
+					ns741_rds_set_radiotext (transmitter, mmr70[transmitter].rdstext);
+					break;
+				}
+
+				if (str_is_arg(arg_buffer, "set rdsid", &arg))
+				{
+					// bzero(pdata->rdsid, sizeof(pdata->rdsid));
+					// strncpy(pdata->rdsid, arg, 8);
+					bzero (mmr70[transmitter].rdsid, sizeof(mmr70[transmitter].rdsid));
+					strncpy (mmr70[transmitter].rdsid, arg, 8);
+					// ns741_rds_set_progname() will pad rdsid with spaces if needed
+					// ns741_rds_set_progname(pdata->rdsid);
+					// ns741_rds_reset_radiotext();
+					ns741_rds_set_progname(transmitter, mmr70[transmitter].rdsid);
+					ns741_rds_reset_radiotext(transmitter);
+					break;
+				}
+
+				if (str_is(arg_buffer, "die") || str_is(arg_buffer, "stop"))
+				{
+					run = 0;
+					syslog(LOG_NOTICE, "Shutting down.\n");
+					break;
+				}
+
+				if (str_is(arg_buffer, "status"))
+				{
+					bzero(arg_buffer, sizeof(arg_buffer));
+					// sprintf(arg_buffer, "freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
+					// 	pdata->frequency,
+					// 	txpower[pdata->txpower],
+					// 	pdata->power ? "on" : "off",
+					// 	pdata->mute ? "on" : "off",
+					// 	pdata->gain ? "on" : "off",
+					// 	pdata->volume,
+					// 	pdata->stereo ? "on" : "off",
+					// 	pdata->rds ? "on" : "off",
+					// 	pdata->rdsid, pdata->rdstext);
+					
+					sprintf(arg_buffer, "transmitter:  %d transmitter name: %s freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
+						transmitter,
+						mmr70[transmitter].name,
+						mmr70[transmitter].frequency,
+						txpower[mmr70[transmitter].txpower],
+						mmr70[transmitter].power ? "on" : "off",
+						mmr70[transmitter].mute ? "on" : "off",
+						mmr70[transmitter].gain ? "on" : "off",
+						mmr70[transmitter].volume,
+						mmr70[transmitter].stereo ? "on" : "off",
+						mmr70[transmitter].rds ? "on" : "off",
+						mmr70[transmitter].rdsid, 
+						mmr70[transmitter].rdstext);
+
+					write(csd, arg_buffer, strlen(arg_buffer) + 1);
+					break;
+				}
 			}
-			else
-			{
-				syslog(LOG_NOTICE, "Bad volume level. Range 0-6\n");
-			}
-			break;
-		}
-
-		if (str_is_arg(buffer, "set stereo", &arg))
-		{
-			if (str_is(arg, "on"))
-			{
-				syslog(LOG_NOTICE, "Enabling stereo signal...\n");
-				ns741_stereo(1);
-				pdata->stereo = 1;
-				break;
-			}
-			if (str_is(arg, "off"))
-			{
-				syslog(LOG_NOTICE, "Disabling stereo signal...\n");
-				ns741_stereo(0);
-				pdata->stereo = 0;
-			}
-			break;
-		}
-
-		if (str_is_arg(buffer, "set txpwr", &arg))
-		{
-			int txpwr = atoi(arg);
-
-			if ((txpwr >= 0) && (txpwr <= 3))
-			{
-				syslog(LOG_NOTICE, "Changing transmit power...\n");
-				ns741_txpwr(txpwr);
-				pdata->txpower = txpwr;
-			}
-			else
-			{
-				syslog(LOG_NOTICE, "Bad transmit power. Range 0-3\n");
-			}
-			break;
-		}
-
-		if (str_is_arg(buffer, "set rdstext", &arg))
-		{
-			strncpy(pdata->rdstext, arg, 64);
-			ns741_rds_set_radiotext(pdata->rdstext);
-			break;
-		}
-
-		if (str_is_arg(buffer, "set rdsid", &arg))
-		{
-			bzero(pdata->rdsid, sizeof(pdata->rdsid));
-			strncpy(pdata->rdsid, arg, 8);
-			// ns741_rds_set_progname() will pad rdsid with spaces if needed
-			ns741_rds_set_progname(pdata->rdsid);
-			ns741_rds_reset_radiotext();
-			break;
-		}
-
-		if (str_is(buffer, "die") || str_is(buffer, "stop"))
-		{
-			run = 0;
-			syslog(LOG_NOTICE, "Shutting down.\n");
-			break;
-		}
-
-		if (str_is(buffer, "status"))
-		{
-			bzero(buffer, sizeof(buffer));
-			sprintf(buffer, "freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
-				pdata->frequency,
-				txpower[pdata->txpower],
-				pdata->power ? "on" : "off",
-				pdata->mute ? "on" : "off",
-				pdata->gain ? "on" : "off",
-				pdata->volume,
-				pdata->stereo ? "on" : "off",
-				pdata->rds ? "on" : "off",
-				pdata->rdsid, pdata->rdstext);
-			write(csd, buffer, strlen(buffer) + 1);
-			break;
-		}
-
-	} while(0);
+		} while(run);
+	}
 
 	close(csd);
-*/	return 0;
+	return 0;
 }
 
 // helper string compare functions

@@ -55,7 +55,7 @@ int tca9548a_select_port (uint8_t index, uint8_t port)
 
 }
 
-// for debug purposed
+// for debug purposes
 int tca9548a_read (uint8_t index)
 {
     int i2cbus = multiplexer[index].i2cbus;
