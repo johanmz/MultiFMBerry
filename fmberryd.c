@@ -34,7 +34,8 @@
 
 #define RPI_REVISION RPI_REV2
 
-///TODO: omgaan met geen RDS in config voor transmitter
+//TODO: omgaan met geen RDS in config voor transmitter
+//TODO: bij rds uit of poweroff haal transmitter uit interrupt, check of wel nodig
 
 // RDS interrupt pin
 int rdsint;
@@ -314,7 +315,7 @@ int main(int argc, char **argv)
 	uint16_t trs_rdsstatus;
 	uint8_t transmitter;
 	int ledcounter = 0;
-	int intr_notfinished;
+	int intr_notfinished=99;
 	while(run) {
 		
 		// alternative loop to run without interrupts, however this fully saturates the i2c bus
@@ -346,12 +347,13 @@ int main(int argc, char **argv)
 		// if new interrupts from transmitter came during the previous processing, first handle these
 		// if all done then wait for the next interrupt
 		// note that the interruptpin of the mcp20317 will only return to high if there are no more MRR70's with the interrupt low AND the GPIO register of the MCP23017 is read
-		intr_notfinished = 99;
+		
 		for (int j = 0; j<nr_IOexpanders;j++)
 			if (IOexpander[j].intr_notfinished) {
 				intr_notfinished = 1;
 				break;
 			}
+
 		if (!intr_notfinished) 
 			if (poll(polls, nfds, 25) < 0)
 				break;
@@ -373,7 +375,8 @@ int main(int argc, char **argv)
 					trs_rdsstatus >>= 1;
 				}
 				//while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run. This also clears the intrrupt pin
-				IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
+				intr_notfinished = 0;
+				IOexpander[j].intr_notfinished = (rpi_pin_get(IOexpander[j].interruptpin) == 0) ? 1 : 0;
 			}
 		}
 		if (polls[0].revents)
@@ -485,36 +488,38 @@ int ProcessTCP(int sock)
 	// read for which transmitter(s) the command needs to be executed
 	// format ctlberry transmitter1,transmitter2,...|all action
 	int do_fortransmitter[MAXTRANSMITTERS]; 
+	int transmittersspecified = 0;
 	bzero(do_fortransmitter, sizeof(do_fortransmitter));
-	if (strncmp(full_buffer, "all", 3)) {
-		for (int j = 0; j<<nr_transmitters;j++)
+	if (strncmp(full_buffer, "all", 3) == 0) {
+		for (int j = 0; j<nr_transmitters;j++) {
 			do_fortransmitter[j]=1;
-	}
-	else {
-		char * token = strtok(full_buffer, " ");
-		if (token != NULL) {
-			char * ctoken = strtok(full_buffer, ",");
-			if (ctoken == NULL) {
-				for (int k=0; k<nr_transmitters;k++)
-					if (mmr70[k].name == token) {
-						do_fortransmitter[k]=1;
-						break;
-					}
-			}
-			else {
-				while (ctoken != NULL) {
-					for (int k=0; k<nr_transmitters;k++)
-						if (mmr70[k].name == ctoken)
-							do_fortransmitter[k]=1;
-					ctoken = strtok(NULL, ",");
-				}
-			}
+			transmittersspecified++;
 		}
 	}
+	else {
+		int f=0; int t=0;
+		char transmittername[32];
+		bzero(transmittername, sizeof(transmittername));
+		do {
+			if (full_buffer[f] != ',' && full_buffer[f] != ' ')
+				transmittername[t++]=full_buffer[f];
+			else {
+				for (int k=0; k<nr_transmitters;k++) {
+					if (strcmp(mmr70[k].name, transmittername) == 0)
+					{
+						do_fortransmitter[k]=1;
+						transmittersspecified++;
+						bzero(transmittername, sizeof(transmittername));
+						t=0;
+						break;
+					}
+				}
+			}
+			if (full_buffer[f++] == ' ')
+				break;
+		} while (1);
+	} 
 
-	int transmittersspecified = 0;
-	for (int j=1;j>nr_transmitters;j++)
-		transmittersspecified++;
 	if (!transmittersspecified)
 		printf ("Transmitters missing. Use: cltfmberry transmitter1[,transmitter..]|all <command>\n");
 
@@ -686,7 +691,8 @@ int ProcessTCP(int sock)
 
 				if (str_is(arg_buffer, "status"))
 				{
-					bzero(arg_buffer, sizeof(arg_buffer));
+					char status_buffer[256];
+					bzero(status_buffer, sizeof(status_buffer));
 					// sprintf(arg_buffer, "freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
 					// 	pdata->frequency,
 					// 	txpower[pdata->txpower],
@@ -698,7 +704,7 @@ int ProcessTCP(int sock)
 					// 	pdata->rds ? "on" : "off",
 					// 	pdata->rdsid, pdata->rdstext);
 					
-					sprintf(arg_buffer, "transmitter:  %d transmitter name: %s freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
+					sprintf(status_buffer, "transmitter: %d transmitter name: %s freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
 						transmitter,
 						mmr70[transmitter].name,
 						mmr70[transmitter].frequency,
@@ -712,10 +718,12 @@ int ProcessTCP(int sock)
 						mmr70[transmitter].rdsid, 
 						mmr70[transmitter].rdstext);
 
-					write(csd, arg_buffer, strlen(arg_buffer) + 1);
+					write(csd, status_buffer, strlen(status_buffer) + 1);
 					break;
 				}
 			}
+			else
+				break;
 		} while(run);
 	}
 
