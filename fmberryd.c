@@ -356,6 +356,7 @@ int main(int argc, char **argv)
 			if (poll(polls, nfds, 25) < 0)
 				break;
 
+			
 		for (int j=0;j<nr_IOexpanders;j++)
 		{
 			if (polls[j+1].revents || IOexpander[j].intr_notfinished || intr_notfinished == 99) {
@@ -373,13 +374,12 @@ int main(int argc, char **argv)
 				}
 				//while processing this interrupt, new transmitters might have send an interrupt, remember this for the next run. This also clears the intrrupt pin
 				IOexpander[j].intr_notfinished = ~rpi_pin_get(IOexpander[j].interruptpin);
-			 
 			}
 		}
-
 		if (polls[0].revents)
 			 ProcessTCP(lst);
 			// ProcessTCP(lst, &mmr70);
+
 	}
 
 	//clean up at exit
