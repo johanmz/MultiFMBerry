@@ -1,5 +1,6 @@
 /*
 	FMBerry - an cheap and easy way of transmitting music with your Pi.
+    Copyright (C) 2021      by Johan Muizelaar - modifications for multiple fm transmitters - (https://github.com/johanmz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,11 +27,9 @@ static int address;
 // initialise i2c bus for tca9548a multiplexer(s)
 int tca9548a_init_i2c (uint8_t bus)
 {
-    for (int j=0; j<MAXMULTIPLEXERS; j++)
-    {
+    for (int j=0; j<MAXMULTIPLEXERS; j++) {
         address = multiplexer[j].address;
-        if (address)
-        {
+        if (address) {
             multiplexer[j].i2cbus=-1;
             multiplexer[j].i2cbus=i2c_init(bus, address);
             if (multiplexer[j].i2cbus == -1) 
@@ -61,8 +60,7 @@ int tca9548a_read (uint8_t index)
     int i2cbus = multiplexer[index].i2cbus;
     char buf[1];										
 	
-    if ((read (i2cbus, buf, 1)) != 1) {
+    if ((read (i2cbus, buf, 1)) != 1)
 		return -1;
-	}
 	return buf[0];   
 }

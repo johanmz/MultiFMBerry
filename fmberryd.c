@@ -2,6 +2,8 @@
 	FMBerry - an cheap and easy way of transmitting music with your Pi.
     Copyright (C) 2011-2013 by Tobias Mädel (t.maedel@alfeld.de)
 	Copyright (C) 2013      by Andrey Chilikin (https://github.com/achilikin)
+	Copyright (C) 2021      by Johan Muizelaar - modifications for multiple fm transmitters - (https://github.com/johanmz)
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -31,11 +33,13 @@
 #include <netinet/in.h>
 #include "defs.h"
 
-
 #define RPI_REVISION RPI_REV2
 
 //TODO: omgaan met geen RDS in config voor transmitter
 //TODO: bij rds uit of poweroff haal transmitter uit interrupt, check of wel nodig
+//TODO: mogelijk maken om rds pi en pty te zetten
+//TODO: check of root rechten wel nodig zijn 
+//TODO; config locatie herstellen
 
 // RDS interrupt pin
 int rdsint;
@@ -147,9 +151,6 @@ int main(int argc, char **argv)
 	if (cfg_parse(cfg, "/home/pi/git/FMBerry/fmberry.conf") == CFG_PARSE_ERROR)
 		return 1;
 
-	// get LED pin number
-	int led = 1; // led state
-	ledpin = cfg_getint(cfg, "ledpin");
 	rdsint = cfg_getint(cfg, "rdspin");
 
 	int nfds;
@@ -237,7 +238,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-
 	// initialize the ns741 register map for all transmitters
 	ns741_init_reg(nr_transmitters);
 
@@ -300,14 +300,14 @@ int main(int argc, char **argv)
 		nfds = 1+nr_IOexpanders;
 	}
 
-
+	// send first two bytes for each transmitter	
 	for (int k=0;k<nr_transmitters;k++) {
 		if (tca9548a_select_port(mmr70[k].i2c_mplexindex,mmr70[k].i2c_mplexport) == -1) {
 			syslog(LOG_ERR, "Could not switch tca9548a\n");
 			exit(EXIT_FAILURE);
 		}
 		ns741_rds(k, mmr70[k].rds);
-		ns741_rds_isr(k); // send first two bytes
+		ns741_rds_isr(k); 
 	}
 	
 
@@ -342,23 +342,18 @@ int main(int argc, char **argv)
 		// 	}
 		// }
 			
-
-
 		// if new interrupts from transmitter came during the previous processing, first handle these
 		// if all done then wait for the next interrupt
 		// note that the interruptpin of the mcp20317 will only return to high if there are no more MRR70's with the interrupt low AND the GPIO register of the MCP23017 is read
-		
 		for (int j = 0; j<nr_IOexpanders;j++)
 			if (IOexpander[j].intr_notfinished) {
 				intr_notfinished = 1;
 				break;
 			}
-
 		if (!intr_notfinished) 
 			if (poll(polls, nfds, 25) < 0)
 				break;
 
-			
 		for (int j=0;j<nr_IOexpanders;j++)
 		{
 			if (polls[j+1].revents || IOexpander[j].intr_notfinished || intr_notfinished == 99) {
@@ -381,24 +376,17 @@ int main(int argc, char **argv)
 		}
 		if (polls[0].revents)
 			 ProcessTCP(lst);
-			// ProcessTCP(lst, &mmr70);
-
 	}
 
 	//clean up at exit
 	for (int j=0;j<nr_transmitters;j++)
 		ns741_power(transmitter, 0);
 	
-	for (int j=0;j<nr_transmitters;j++)
-		if (mmr70[j].rds) {
-			rpi_pin_unexport(rdsint);
+	for (int j=0;j<MAXIOEXPANDERS;j++)
+		if (IOexpander[j].interruptpin) {
+			rpi_pin_unexport(IOexpander[j].interruptpin);
 			break;
 		}
-
-	if (ledpin > 0) {
-		rpi_pin_set(ledpin, 0);
-		rpi_pin_unexport(ledpin);
-	}
 
 	close(lst);
 	closelog();
@@ -462,7 +450,6 @@ int ProcessTCP(int sock)
 	bzero(arg_buffer, sizeof(arg_buffer));
 	char full_buffer[512];
 	bzero(full_buffer, sizeof(full_buffer));
-	
 
 	// Auf Verbindung warten, bei Verbindung Connected-Socket erstellen 
 	int csd = accept(sock, (struct sockaddr *)&clientaddr, &clen);
@@ -505,8 +492,7 @@ int ProcessTCP(int sock)
 				transmittername[t++]=full_buffer[f];
 			else {
 				for (int k=0; k<nr_transmitters;k++) {
-					if (strcmp(mmr70[k].name, transmittername) == 0)
-					{
+					if (strcmp(mmr70[k].name, transmittername) == 0) {
 						do_fortransmitter[k]=1;
 						transmittersspecified++;
 						bzero(transmittername, sizeof(transmittername));
@@ -523,12 +509,9 @@ int ProcessTCP(int sock)
 	if (!transmittersspecified)
 		printf ("Transmitters missing. Use: cltfmberry transmitter1[,transmitter..]|all <command>\n");
 
-
-
 	int i=0;
 	while (full_buffer[i++] != ' ');
 	strncpy(arg_buffer, full_buffer+i, sizeof(arg_buffer)-i);
-
 
 	for (int transmitter=0;transmitter<nr_transmitters;transmitter++) {
 		do {
@@ -693,17 +676,6 @@ int ProcessTCP(int sock)
 				{
 					char status_buffer[256];
 					bzero(status_buffer, sizeof(status_buffer));
-					// sprintf(arg_buffer, "freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
-					// 	pdata->frequency,
-					// 	txpower[pdata->txpower],
-					// 	pdata->power ? "on" : "off",
-					// 	pdata->mute ? "on" : "off",
-					// 	pdata->gain ? "on" : "off",
-					// 	pdata->volume,
-					// 	pdata->stereo ? "on" : "off",
-					// 	pdata->rds ? "on" : "off",
-					// 	pdata->rdsid, pdata->rdstext);
-					
 					sprintf(status_buffer, "transmitter: %d transmitter name: %s freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
 						transmitter,
 						mmr70[transmitter].name,
