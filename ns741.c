@@ -54,23 +54,12 @@ static uint8_t block_index[MAXNRTRANSMITTERS];// = 0; // block index within the 
 // RDS 2A Group containing Radiotext chars
 // It is better not to use CC of your country
 // to avoid collision with any local radio stations
-static uint16_t rds_text[MAXNRTRANSMITTERS][4] =
-{
-	RDS_PI(RDS_RUSSIA,CAC_LOCAL,0),
-	RDS_GT(2,0) | RDS_PTY(PTY_INFORM),
-	0, 0
-};
+static uint16_t rds_text[MAXNRTRANSMITTERS][4] ;
 
 // RDS 0B Group containing Program Service name
 // It is better not to use CC of your country
 // to avoid collision with any local radio stations
-static uint16_t rds_ps[MAXNRTRANSMITTERS][4] =
-{
-	RDS_PI(RDS_RUSSIA,CAC_LOCAL,0),
-	RDS_GT(0,0) | RDS_PTY(PTY_INFORM) | RDS_MS,
-	0xE0CD, // E0 - No AF exists, CD - Filler code, see Table 11 of RBDS Standard
-	0
-};
+static uint16_t rds_ps[MAXNRTRANSMITTERS][4];
 
 #define RDS_MAX_GROUPS 20 // 4 groups - Program Service name, up to 16 - Radiotext
 #define RDS_MAX_BLOCKS (RDS_MAX_GROUPS << 2)
@@ -107,47 +96,28 @@ static uint8_t ns741_reg[MAXNRTRANSMITTERS][22]=
 // set the N741 register map for every transmitter
 void ns741_init_reg(uint8_t nr_transmitters)
 {
-	for (int j = 1; j < nr_transmitters;j++)
-	{
+	for (int j = 1; j < nr_transmitters;j++) {
 		for (int k = 0; k< sizeof(ns741_reg[1]); k++)
 			ns741_reg[j][k] = ns741_reg[0][k];
+		
 		// increase the default frequency of every next transmitter by 200 Khz
 		ns741_reg[j][0x0A] = (NS741_FREQ(NS741_DEFAULT_F + j*200) & 0xFF);
 		ns741_reg[j][0x0B] = ((NS741_FREQ(NS741_DEFAULT_F + j*200) & 0xFF00) >> 8);
-
-		group_index[j]=0;
-		block_index[j]=0;
-		text_len[j]=1;
-
-		// TODO tijdelijk
-		if (j==0)
-		{
-			rds_ps[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
-			rds_ps[j][1] = RDS_GT(0,0) | RDS_PTY(PTY_INFORM) | RDS_MS;
-			rds_ps[j][2] = 0xE0CD;
-			rds_ps[j][3] = 0;
-
-			rds_text[j][0] = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0);
-			rds_text[j][1] = RDS_GT(2,0) | RDS_PTY(PTY_INFORM);
-			rds_text[j][2] = 0;
-			rds_text[j][3] = 0;
-		}
-		else
-		{
-			rds_ps[j][0] = RDS_PI(RDS_IRELAND,CAC_LOCAL,0);
-			rds_ps[j][1] = RDS_GT(0,0) | RDS_PTY(PTY_INFORM) | RDS_MS;
-			rds_ps[j][2] = 0xE0CD;
-			rds_ps[j][3] = 0;
-
-			rds_text[j][0] = RDS_PI(RDS_IRELAND,CAC_LOCAL,0);
-			rds_text[j][1] = RDS_GT(2,0) | RDS_PTY(PTY_INFORM);
-			rds_text[j][2] = 0;
-			rds_text[j][3] = 0;
-		}
 	}
-
 }
 
+void ns741_init_rds_registers(uint8_t transmitter)
+{
+	group_index[transmitter]=0;
+	block_index[transmitter]=0;
+	text_len[transmitter]=1;
+
+	// set defaults for RDS 0B Group containing Program Service name and RDS 2A Group containing Radiotext chars
+	rds_ps[transmitter][2] = 0xE0CD; // E0 - No AF exists, CD - Filler code, see Table 11 of RBDS Standard
+	rds_ps[transmitter][3] = 0;
+	rds_text[transmitter][2] = 0;
+	rds_text[transmitter][3] = 0;
+}
 
 // initialise i2c bus for the transmitters
 int ns741_init_i2c (uint8_t bus, uint8_t nr_transmitters)
@@ -372,18 +342,15 @@ void ns741_rds_reset_radiotext(uint8_t transmitter)
 
 void ns741_rds_set_rds_pi(uint8_t transmitter, uint16_t rdspi)
 {
+	// rdspi = RDS_PI(RDS_RUSSIA,CAC_LOCAL,0),
 	rds_ps[transmitter][0] = rdspi;
-	rds_ps[transmitter][2] = rdspi;
 	rds_text[transmitter][0] = rdspi;
 }
 
 void ns741_rds_set_rds_pty(uint8_t transmitter, uint8_t rdspty)
 {
-	uint16_t pty = RDS_PTY(rdspty);
-	rds_ps[transmitter][1]   &= ~RDS_PTYM;
-	rds_ps[transmitter][1]   |= pty;
-	rds_text[transmitter][1] &= ~RDS_PTYM;
-	rds_text[transmitter][1] |= pty;
+	rds_ps[transmitter][1] = RDS_GT(0,0) | RDS_PTY(rdspty) | RDS_MS;
+	rds_text[transmitter][1] = RDS_GT(0,0) | RDS_PTY(rdspty) | RDS_MS;
 }
 
 void ns741_rds_debug(uint8_t on)

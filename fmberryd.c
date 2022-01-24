@@ -37,7 +37,6 @@
 
 //TODO: omgaan met geen RDS in config voor transmitter
 //TODO: bij rds uit of poweroff haal transmitter uit interrupt, check of wel nodig
-//TODO: mogelijk maken om rds pi en pty te zetten
 //TODO: check of root rechten wel nodig zijn 
 //TODO; config locatie herstellen
 
@@ -238,7 +237,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// initialize the ns741 register map for all transmitters
+	// initialize the ns741 register map for all transmitters and initialise rds_ps & rds_text registers
 	ns741_init_reg(nr_transmitters);
 
 	// initialize all tca9548a multiplexer i2c busses
@@ -272,8 +271,11 @@ int main(int argc, char **argv)
 		ns741_txpwr(j, mmr70[j].txpower);
 		ns741_mute(j, mmr70[j].mute);
 		ns741_stereo(j, mmr70[j].stereo);
+		ns741_init_rds_registers(j);
 		ns741_rds_set_progname(j, mmr70[j].rdsid);
 		ns741_rds_set_radiotext(j, mmr70[j].rdstext);
+		ns741_rds_set_rds_pi(j, mmr70[j].rdspi);
+		ns741_rds_set_rds_pty(j, mmr70[j].rdspty);
 		ns741_power(j, mmr70[j].power);
 		ns741_input_gain(j, mmr70[j].gain);
 		ns741_volume(j, mmr70[j].volume);
@@ -507,7 +509,7 @@ int ProcessTCP(int sock)
 	} 
 
 	if (!transmittersspecified)
-		printf ("Transmitters missing. Use: cltfmberry transmitter1[,transmitter..]|all <command>\n");
+		syslog(LOG_NOTICE, "Transmitter(s) missing. Use: cltfmberry transmitter1[,transmitter..]|all <command>\n");
 
 	int i=0;
 	while (full_buffer[i++] != ' ');
@@ -665,6 +667,29 @@ int ProcessTCP(int sock)
 					break;
 				}
 
+				if (str_is_arg(arg_buffer, "set rdspi", &arg))
+				{
+					int rds_pi = strtol(arg, NULL, 16);
+					if ((rds_pi >= 0x0000) && (rds_pi <= 0xFFFF))
+					{
+						ns741_rds_set_rds_pi(transmitter, rds_pi);
+						mmr70[transmitter].rdspi = rds_pi;
+					}
+					break;
+				}	
+
+				if (str_is_arg(arg_buffer, "set rdspty", &arg))
+				{
+					int rds_pty = atoi(arg);
+					if ((rds_pty >= 0) && (rds_pty < 32))
+					{
+						ns741_rds_set_rds_pty(transmitter, rds_pty);
+						mmr70[transmitter].rdspty = rds_pty;
+					}
+					break;
+				}					
+				
+
 				if (str_is(arg_buffer, "die") || str_is(arg_buffer, "stop"))
 				{
 					run = 0;
@@ -676,7 +701,7 @@ int ProcessTCP(int sock)
 				{
 					char status_buffer[256];
 					bzero(status_buffer, sizeof(status_buffer));
-					sprintf(status_buffer, "transmitter: %d transmitter name: %s freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdsid: '%s' rdstext: '%s'\n",
+					sprintf(status_buffer, "\033[0;36mtransmitter: %d\033[0;0m transmittername: %s freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdspi: 0x%04X rdspty: %d rdsid: '%s' rdstext: '%s'\n",
 						transmitter,
 						mmr70[transmitter].name,
 						mmr70[transmitter].frequency,
@@ -687,6 +712,8 @@ int ProcessTCP(int sock)
 						mmr70[transmitter].volume,
 						mmr70[transmitter].stereo ? "on" : "off",
 						mmr70[transmitter].rds ? "on" : "off",
+						mmr70[transmitter].rdspi,
+						mmr70[transmitter].rdspty,
 						mmr70[transmitter].rdsid, 
 						mmr70[transmitter].rdstext);
 
