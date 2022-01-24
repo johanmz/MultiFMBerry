@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 	}
 
 	// initialize the ns741 register map for all transmitters and initialise rds_ps & rds_text registers
-	ns741_init_reg(nr_transmitters);
+	ns741_init_registers(nr_transmitters);
 
 	// initialize all tca9548a multiplexer i2c busses
 	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus"))==-1) {
@@ -279,7 +279,6 @@ int main(int argc, char **argv)
 		ns741_power(j, mmr70[j].power);
 		ns741_input_gain(j, mmr70[j].gain);
 		ns741_volume(j, mmr70[j].volume);
-		// nog maken functies voor rdspi en rdspty
 	}
 
 	ns741_rds_debug(1);
@@ -359,8 +358,6 @@ int main(int argc, char **argv)
 		for (int j=0;j<nr_IOexpanders;j++)
 		{
 			if (polls[j+1].revents || IOexpander[j].intr_notfinished || intr_notfinished == 99) {
-				//TODO DEZE POLL CLEAR WEG?
-				//rpi_pin_poll_clear(polls[j+1].fd);
 				trs_rdsstatus = ~mcp23017_read_trs_rdsstatus(j); 
 				trs_rdsstatus &= IOexpander[j].GPINTEN;
 				for (int k=0;k<16;k++) {
@@ -529,7 +526,6 @@ int ProcessTCP(int sock)
 						syslog(LOG_NOTICE, "Changing frequency...\n");
 						ns741_set_frequency(transmitter,frequency);
 						mmr70[transmitter].frequency = frequency;
-						//pdata->frequency = frequency;
 					}
 					else
 					{
@@ -542,7 +538,6 @@ int ProcessTCP(int sock)
 				{
 					ns741_power(transmitter,0);
 					mmr70[transmitter].power = 0;
-					// pdata->power = 0;
 					break;
 				}
 
@@ -552,14 +547,12 @@ int ProcessTCP(int sock)
 					ns741_rds(transmitter,1);
 					ns741_rds_reset_radiotext(transmitter);
 					mmr70[transmitter].power = 1;
-					// pdata->power = 1;
 					break;
 				}
 
 				if (str_is(arg_buffer, "muteon"))
 				{
 					ns741_mute(transmitter,1);
-					// pdata->mute = 1;
 					mmr70[transmitter].mute = 1;
 					break;
 				}
@@ -567,7 +560,6 @@ int ProcessTCP(int sock)
 				if (str_is(arg_buffer, "muteoff"))
 				{
 					ns741_mute(transmitter, 0);
-					// pdata->mute = 0;
 					mmr70[transmitter].mute = 0;
 					break;
 				}
@@ -575,7 +567,6 @@ int ProcessTCP(int sock)
 				if (str_is(arg_buffer, "gainlow"))
 				{
 					ns741_input_gain(transmitter,1);
-					// pdata->gain = 1;
 					mmr70[transmitter].gain = 1;
 					break;
 				}
@@ -583,7 +574,6 @@ int ProcessTCP(int sock)
 				if (str_is(arg_buffer, "gainoff"))
 				{
 					ns741_input_gain(transmitter,0);
-					// pdata->gain = 0;
 					mmr70[transmitter].gain = 0;
 					break;
 				}
@@ -596,7 +586,6 @@ int ProcessTCP(int sock)
 					{
 						syslog(LOG_NOTICE, "Changing volume level...\n");
 						ns741_volume(transmitter,volume);
-						// pdata->volume = volume;
 						mmr70[transmitter].volume = volume;
 					}
 					else
@@ -612,7 +601,6 @@ int ProcessTCP(int sock)
 					{
 						syslog(LOG_NOTICE, "Enabling stereo signal...\n");
 						ns741_stereo(transmitter, 1);
-						// pdata->stereo = 1;
 						mmr70[transmitter].stereo = 1;
 						break;
 					}
@@ -620,7 +608,6 @@ int ProcessTCP(int sock)
 					{
 						syslog(LOG_NOTICE, "Disabling stereo signal...\n");
 						ns741_stereo(transmitter, 0);
-						// pdata->stereo = 0;
 						mmr70[transmitter].stereo = 0;
 					}
 					break;
@@ -634,7 +621,6 @@ int ProcessTCP(int sock)
 					{
 						syslog(LOG_NOTICE, "Changing transmit power...\n");
 						ns741_txpwr(transmitter, txpwr);
-						// pdata->txpower = txpwr;
 						mmr70[transmitter].txpower = txpwr;
 					}
 					else
@@ -646,8 +632,6 @@ int ProcessTCP(int sock)
 
 				if (str_is_arg(arg_buffer, "set rdstext", &arg))
 				{
-					// strncpy(pdata->rdstext, arg, 64);
-					// ns741_rds_set_radiotext(pdata->rdstext);
 					strncpy (mmr70[transmitter].rdstext, arg, 64);
 					ns741_rds_set_radiotext (transmitter, mmr70[transmitter].rdstext);
 					break;
@@ -655,13 +639,8 @@ int ProcessTCP(int sock)
 
 				if (str_is_arg(arg_buffer, "set rdsid", &arg))
 				{
-					// bzero(pdata->rdsid, sizeof(pdata->rdsid));
-					// strncpy(pdata->rdsid, arg, 8);
 					bzero (mmr70[transmitter].rdsid, sizeof(mmr70[transmitter].rdsid));
 					strncpy (mmr70[transmitter].rdsid, arg, 8);
-					// ns741_rds_set_progname() will pad rdsid with spaces if needed
-					// ns741_rds_set_progname(pdata->rdsid);
-					// ns741_rds_reset_radiotext();
 					ns741_rds_set_progname(transmitter, mmr70[transmitter].rdsid);
 					ns741_rds_reset_radiotext(transmitter);
 					break;
@@ -689,11 +668,16 @@ int ProcessTCP(int sock)
 					break;
 				}					
 				
-
 				if (str_is(arg_buffer, "die") || str_is(arg_buffer, "stop"))
 				{
 					run = 0;
 					syslog(LOG_NOTICE, "Shutting down.\n");
+					break;
+				}
+
+				if (str_is_arg(arg_buffer, "rdsdebug on", &arg))
+				{
+					ns741_rds_debug(1);
 					break;
 				}
 

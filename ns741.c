@@ -23,7 +23,6 @@
 #include "fmberryd.h"
 
 
-
 // I2C address of MMR-70
 static const int address = 0x66;
 static int i2cbus[MAXNRTRANSMITTERS];
@@ -46,10 +45,6 @@ uint8_t rds_register[4] = {0x03, 0x05, 0x05, 0x05};
 
 static uint8_t group_index[MAXNRTRANSMITTERS];// = 0; // group to be transmitted
 static uint8_t block_index[MAXNRTRANSMITTERS];// = 0; // block index within the group
-
-//static uint8_t group_index = 0; // group to be transmitted
-//static uint8_t block_index = 0; // block index within the group
-
 
 // RDS 2A Group containing Radiotext chars
 // It is better not to use CC of your country
@@ -93,8 +88,8 @@ static uint8_t ns741_reg[MAXNRTRANSMITTERS][22]=
 		0xF4  // 16h: recommended default
 };
 
-// set the N741 register map for every transmitter
-void ns741_init_reg(uint8_t nr_transmitters)
+// set the N741 register map for every transmitter. Copy the values from transmitter 0, set above
+void ns741_init_registers(uint8_t nr_transmitters)
 {
 	for (int j = 1; j < nr_transmitters;j++) {
 		for (int k = 0; k< sizeof(ns741_reg[1]); k++)
@@ -124,8 +119,7 @@ int ns741_init_i2c (uint8_t bus, uint8_t nr_transmitters)
 {
 	int index;
 	int port;
-	// open the multiplexer to the first transmitter
-	
+
 	// open the i2cbus for the transmitters, 0x66 
 	for (int k=0;k<nr_transmitters;k++)
 	{
@@ -142,37 +136,8 @@ int ns741_init_i2c (uint8_t bus, uint8_t nr_transmitters)
 		if (i2c_send_data(i2cbus[k], 0, ns741_reg[k], sizeof(ns741_reg[k])) == -1)
 			return -1;
 	}
-	
-	// initialise the remaining transmitters
-	// for (int j = 1; j < nr_transmitters;j++)
-	// {
-	// 	index = mmr70[j].i2c_mplexindex;
-	// 	port = mmr70[j].i2c_mplexport;
-	// 	if (tca9548a_select_port(index, port) == -1)
-	// 		return -1;
-	// 	// reset registers to default values
-	// 	if (i2c_send_data(i2cbus, 0, ns741_reg[j], sizeof(ns741_reg[j])) == -1)
-	// 		return -1;
-	// }
 	return 0;
 }
-
-
-/*int ns741_init(uint8_t bus, uint32_t f_khz)
-{
-	i2cbus = i2c_init(bus, address);
-	if ((i2cbus == -1) || (i2c_send(i2cbus, 0x00, 0x00) == -1))
-		return -1;
-
-	// set specified frequency
-	ns741_reg[10] = NS741_FREQ(f_khz) & 0x00FF;
-	ns741_reg[11] = (NS741_FREQ(f_khz) & 0xFF00) >> 8;
-
-	// reset registers to default values
-	i2c_send_data(i2cbus, 0, ns741_reg, sizeof(ns741_reg));
-
-	return 0;
-}*/
 
 // register 0x00 controls power and oscillator:
 //	bit 0 - power
