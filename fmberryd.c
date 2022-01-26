@@ -36,8 +36,6 @@
 #define RPI_REVISION RPI_REV2
 
 //TODO: omgaan met geen RDS in config voor transmitter
-//TODO: bij rds uit of poweroff haal transmitter uit interrupt, check of wel nodig
-//TODO: check of root rechten wel nodig zijn 
 //TODO; config locatie herstellen
 
 // RDS interrupt pin
@@ -243,12 +241,13 @@ int main(int argc, char **argv)
 	// initialize all tca9548a multiplexer i2c busses
 	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus"))==-1) {
 		syslog(LOG_ERR, "Init of TCA9548A multiplexer(s) failed! Double-check hardware and .conf and try again!\n");
+		syslog(LOG_ERR, "And check if the user is either root or has i2c read/write rights, verify with i2cdetect -y 1\n");
 		exit(EXIT_FAILURE);
 	}
 	syslog(LOG_NOTICE, "Successfully initialized i2c bus for TCA9548A multiplexer(s).\n");
 
 	// init I2C bus for the mcp23017 IC expander(s)
-	if (mcp23017_init_i2c(cfg_getint(cfg, "i2cbus")) == -1 || mcp23017_init_INT()==-1) {
+	if (mcp23017_init_i2c(cfg_getint(cfg, "i2cbus")) == -1 || mcp23017_init_INT(nr_transmitters)==-1) {
 		syslog(LOG_ERR, "Init of mcp23017 IO expander(s) failed! Double-check hardware and .conf and try again!\n");
 		exit(EXIT_FAILURE);
 	}

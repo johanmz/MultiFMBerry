@@ -315,7 +315,7 @@ void ns741_rds_set_rds_pi(uint8_t transmitter, uint16_t rdspi)
 void ns741_rds_set_rds_pty(uint8_t transmitter, uint8_t rdspty)
 {
 	rds_ps[transmitter][1] = RDS_GT(0,0) | RDS_PTY(rdspty) | RDS_MS;
-	rds_text[transmitter][1] = RDS_GT(0,0) | RDS_PTY(rdspty) | RDS_MS;
+	rds_text[transmitter][1] = RDS_GT(2,0) | RDS_PTY(rdspty) | RDS_MS;
 }
 
 void ns741_rds_debug(uint8_t on)

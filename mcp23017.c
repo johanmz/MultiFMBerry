@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdio.h>
+#include <unistd.h>
 #include "i2c.h"
 #include "defs.h"
 #include "fmberryd.h"
@@ -58,22 +59,20 @@ uint16_t mcp23017_read_trs_rdsstatus (int index)
 }
 
 // setup the interrupt registers for the mcp23017, we need this to pass the RDS_INT for the transmitters to the raspberry pi
-int mcp23017_init_INT ()
+int mcp23017_init_INT (int nr_transmitters)
 {
  
      // build up the GPINTEN register for the ports with a MMR70 connected, for each mcp23017
     int IOexpanderport;
     uint16_t GPINTEN=0;
 
-    for (int k=0; k<MAXTRANSMITTERS; k++) {
-        if (mmr70[k].frequency) {
+    for (int k=0; k<nr_transmitters; k++) {
+        if (mmr70[k].rds) {
             IOexpanderport=mmr70[k].IOexpanderport;
             GPINTEN = IOexpander[mmr70[k].IOexpanderindex].GPINTEN;
             GPINTEN |= 1 << IOexpanderport;
             IOexpander[mmr70[k].IOexpanderindex].GPINTEN= GPINTEN;
         }
-        else
-           break;
     } 
     // initalise each mcp23017 to handle the interrupts from the transmitters
     // enable only connected ports to trigger an interrupt, when RDSINT of transmitter goes low

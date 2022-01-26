@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 int mcp23017_init_i2c (uint8_t bus); // initialise i2c bus for IOexpander(s) used to read the RDS_INT signal from the transmitters
-int mcp23017_init_INT (); // set the mccp23017 interrupt register in mirror mode 
+int mcp23017_init_INT (int nr_transmitters); // set the mccp23017 interrupt register in mirror mode 
 uint16_t mcp23017_read_trs_rdsstatus(int index); // read which transmitter(s) have RDS_INT set, i.e. are ready to receive the next RDS block
 
 #endif
