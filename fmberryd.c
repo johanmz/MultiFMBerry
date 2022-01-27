@@ -35,15 +35,6 @@
 
 #define RPI_REVISION RPI_REV2
 
-//TODO: omgaan met geen RDS in config voor transmitter
-//TODO; config locatie herstellen
-
-// RDS interrupt pin
-int rdsint;
-
-// LED pin number
-int ledpin = -1;
-
 mmr70_data_t mmr70[MAXTRANSMITTERS];
 IOexpander_data_t IOexpander[MAXIOEXPANDERS];
 multiplexer_data_t multiplexer[MAXMULTIPLEXERS];
@@ -145,10 +136,15 @@ int main(int argc, char **argv)
 		};
 
 	cfg = cfg_init(opts, CFGF_NONE);
+	if (start_daemon) {
+		if (cfg_parse(cfg, "/etc/fmberry.conf") == CFG_PARSE_ERROR)
+			return 1;
+	}
+	else {
 	if (cfg_parse(cfg, "/home/pi/git/FMBerry/fmberry.conf") == CFG_PARSE_ERROR)
 		return 1;
-
-	rdsint = cfg_getint(cfg, "rdspin");
+	}	
+	//rdsint = cfg_getint(cfg, "rdspin");
 
 	int nfds;
 	struct pollfd  polls[MAXIOEXPANDERS+1]; //+1 for the tcp polling
@@ -241,7 +237,7 @@ int main(int argc, char **argv)
 	// initialize all tca9548a multiplexer i2c busses
 	if (tca9548a_init_i2c(cfg_getint(cfg, "i2cbus"))==-1) {
 		syslog(LOG_ERR, "Init of TCA9548A multiplexer(s) failed! Double-check hardware and .conf and try again!\n");
-		syslog(LOG_ERR, "And check if the user is either root or has i2c read/write rights, verify with i2cdetect -y 1\n");
+		syslog(LOG_ERR, "And check if user is either root or has i2c read/write rights, verify with i2cdetect -y 1\n");
 		exit(EXIT_FAILURE);
 	}
 	syslog(LOG_NOTICE, "Successfully initialized i2c bus for TCA9548A multiplexer(s).\n");
@@ -285,6 +281,7 @@ int main(int argc, char **argv)
 	rpi_pin_init(RPI_REVISION);
 
 	int rds;
+	int rdsint;
 	for (int j=0;j < nr_IOexpanders;j++) {
 		// Get file descriptor for RDS handler
 		polls[j+1].revents = 0;
@@ -499,13 +496,17 @@ int ProcessTCP(int sock)
 					}
 				}
 			}
-			if (full_buffer[f++] == ' ')
+			f++;
+			if (full_buffer[f] == ' ' || full_buffer[f] == 0)
 				break;
 		} while (1);
 	} 
 
-	if (!transmittersspecified)
+	if (!transmittersspecified) {
 		syslog(LOG_NOTICE, "Transmitter(s) missing. Use: cltfmberry transmitter1[,transmitter..]|all <command>\n");
+		close(csd);
+		return -1;
+	}
 
 	int i=0;
 	while (full_buffer[i++] != ' ');
@@ -703,6 +704,9 @@ int ProcessTCP(int sock)
 					write(csd, status_buffer, strlen(status_buffer) + 1);
 					break;
 				}
+
+				//still here? command not recognised. Need to get out of the loop
+				break;
 			}
 			else
 				break;
