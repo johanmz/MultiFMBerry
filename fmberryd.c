@@ -289,6 +289,7 @@ int main(int argc, char **argv)
 		rds = rpi_pin_poll_enable(rdsint, EDGE_FALLING);
 	    if (rds < 0) {
 	        printf("Couldn't enable RDS support\n");
+			syslog(LOG_ERR, "Could not enable RDS support\n");
 	        run = 0;
 			break;
 	    }

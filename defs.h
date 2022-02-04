@@ -14,6 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#define MAXTRANSMITTERS  16 
+#define MAXTRANSMITTERS 16 
 #define MAXIOEXPANDERS 4
 #define MAXMULTIPLEXERS 8
