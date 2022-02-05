@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdio.h>
+#include <syslog.h>
 
 #include "rds.h"
 #include "ns741.h"
@@ -131,10 +132,16 @@ int ns741_init_i2c (uint8_t bus, uint8_t nr_transmitters)
 		i2cbus[k]=-1;
 		i2cbus[k] = i2c_init(bus, address);
 		if ((i2cbus[k] == -1) || (i2c_send(i2cbus[k], 0x00, 0x00) == -1))
+		{
+			syslog(LOG_ERR, "Init of transmitter %s failed! Double-check hardware and .conf and try again!\n", mmr70[k].name);
 			return -1;
+		}
 		// reset register of first transmitter to default values
 		if (i2c_send_data(i2cbus[k], 0, ns741_reg[k], sizeof(ns741_reg[k])) == -1)
+		{	
+			syslog(LOG_ERR, "Cannot send data to transmitter %s! Double-check hardware and .conf and try again!\n", mmr70[k].name);
 			return -1;
+		}
 	}
 	return 0;
 }

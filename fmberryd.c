@@ -154,6 +154,7 @@ int main(int argc, char **argv)
 	int lst = ListenTCP(cfg_getint(cfg, "tcpport"));
 	polls[0].fd = lst;
 	polls[0].events = POLLIN;
+	polls[0].revents=0;
 	nfds = 1;
 
 
@@ -230,6 +231,8 @@ int main(int argc, char **argv)
 			mmr70[j].i2c_mplexindex = mplexindex;
 		}
 	}
+
+
 
 	// initialize the ns741 register map for all transmitters and initialise rds_ps & rds_text registers
 	ns741_init_registers(nr_transmitters);
