@@ -70,17 +70,18 @@ Streaming Audio
 
 Mplayer example:
 ```
-mplayer -vo null -ao alsa:device=default=CARD=Device_3 $URL
-mplayer -vo null -ao alsa:device=default=CARD=Device_4 $OTHERURL
+mplayer -vo null -ao alsa:device=hw=2.0 $URL
+mplayer -vo null -ao alsa:device=hw=3.0 $OTHERURL
 ```
 
 VLC example: 
 ```
-cvlc --http-reconnect --aout=alsa --alsa-audio-device=default:CARD=Device_1 $URL
+cvlc --http-reconnect --aout=alsa --alsa-audio-device=hw:2,0 $URL
+cvlc --http-reconnect --aout=alsa --alsa-audio-device=hw:3,0 $OTHERURL
+
+#this uses much more CPU
 cvlc --http-reconnect --aout=alsa --alsa-audio-device=default:CARD=Device_2 $OTHERURL
 
 ```
-Where $URL and $OTHERURLis the stream of your favorite radio station
-
-Mplayer uses much less CPU then VLC, install with ``sudo apt install mplayer``
+Where $URL and $OTHERURL are the streams of your favorite radio stations
 
