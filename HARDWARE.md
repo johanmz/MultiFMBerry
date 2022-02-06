@@ -26,7 +26,7 @@ Thanks to Andrey Chilikin for the excellent photo with all testpoints labeled.
 
 ![Testpoints](http://tbspace.de/content/images/fmberrypics/testpins.jpg)
 
-![Raspberry Pi pins, courtesy of pinout.xyz](https://raw.githubusercontent.com/Gadgetoid/Pinout.xyz/master/resources/raspberry-pi-pinout.png)
+![Raspberry Pi pins](https://www.raspberrypi-spy.co.uk/wp-content/uploads/2012/06/Raspberry-Pi-GPIO-Header-with-Photo.png)
 
 
 External antenna, a wire (300/(frequency in MHz) * 25) cm long, can be connected to TP19 or to TP20 - the only testpoint on back side of MMR-70
