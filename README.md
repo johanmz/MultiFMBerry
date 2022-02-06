@@ -1,7 +1,7 @@
 ![FMBerry Logo](http://tbspace.de/holz/uzsjpoghdq.png)
 MultiFMBerry
 =======
-> Originally written by Tobias Mädel (t.maedel@alfeld.de, http://tbspace.de). Modified by Johan Muizelaar (https://github.com/johanmz) to control multiple transmitters.
+> Originally written by Tobias Mädel (t.maedel@alfeld.de, http://tbspace.de). Extended by Johan Muizelaar (https://github.com/johanmz) to control multiple transmitters.
 
 > 
 
@@ -9,7 +9,7 @@ What is this?
 -------------
 This is a fork of FMBerry from Tobias Mädel, a piece of software that allows you to transmit FM radio with your Raspberry Pi. The original software from Tobias allows you to control one transmitter, MultiFMBerry allows you to control multiple transmitters. The software is tested with 8 transmitters using a Raspberry Pi 3B but more should also be possible.
 
-The goal was as an alternative for  analog cable FM after the switch-off, but even more just as a fun project.
+The goal was to create an alternative for analog cable FM after the switch-off, but even more just as a fun project.
 
 
 How does it work? 
@@ -20,17 +20,17 @@ You can get these still for cheap from Ebay in 2022.
 Why does it need additional IC's apart from the MRR70's?
 -------------
 
-Since all transmitters  use the same I2C address (0x66), one ore more multiplexers (TCA9548A) are used to switch the transmitters before sending commands. Each TCA9548A can handle 8 transmitters. One or more IO expanders (MCP23017) are used to read the RDS interrupt signals, this is the signal that the transmitter needs the next RDS block. Each MCP23017 can handle up to 16 transmitters. 
+Since all transmitters  use the same I2C address (0x66), one ore more multiplexers (TCA9548A) are used to switch the transmitters before sending commands and RDS updates to the transmitters. Each TCA9548A has 8 I2C ports so it can handle 8 transmitters. One or more IO expanders (MCP23017) are used to read the RDS interrupt signals, this is the signal that the transmitter needs the next RDS block. Each MCP23017 can handle up to 16 transmitters. 
 
 
 What do I need to build this? 
 -------------
 * MMR-70 transmitter, two or more. If you want to control only one transmitter, it makes more sense to use the software and hardware setup from Tobias since it doesn't need the additional IC's.
-* Raspberry Pi (tested with 3B and 4 but see the limitations of the Pi4 in AUDIO.md before you start!)
+* Raspberry Pi (tested with 3B and 4 but see the limitations of the Pi4 in [AUDIO.md](AUDIO.md) before you start!)
 * TCA9548A, MCP23017 and AMS1117 breakout board(s) from AliExpress or Ebay
 * Soldering equipment (soldering iron and some solder)
 * USB sound card for each transmitter, the cheap "3D Sound" USB sound sticks from AliExpress work fine.
-* One or more USB hubs if you have more then 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also AUDIO.md.
+* One or more USB hubs if you have more then 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](AUDIO.md).
 
 
 The hardware is explained here:
@@ -40,9 +40,9 @@ How many transmitters and audio streams can one Pi control?
 ------------
 It depends:
 
-* The Raspberry Pi 4 has a limit of 4 USB sound cards due to limitations in the USB bus. It should be possible to add more sound cards using a USB C power delivery hub connected to the OTG (power) connector, I haven't tried this myself. See AUDIO.md. On the Raspberry Pi 3B, you can use much more USB sound cards with a suitable hub, see below.
-* If you want to use more then 4 USB sound cards (on a Raspberry Pi 3 since the Pi 4 has a limit of 4 cards, see above), you obviously need one ore more USB hubs. Make sure that the hub has Multiple Transaction Translators and not Single Transaction Translators, otherwise your sound will break up with approx 3 or more streams. Unfortunately this is not always specified. I've succesfully used the BIG7 from UUGear and USB 3.2 HAT from Waveshare.
-* The Raspberry Pi OS Linux kernel has a limit of 8 sound cards. You can increase this limit and compile your own kernel, this is not as hard as might seem. See https://www.raspberrypi.com/documentation/computers/linux_kernel.html. Set ``CONFIG_SND_DYNAMIC_MINORS=Y`` and ``CONFIG_MAX_CARDS=32``. 
+* The Raspberry Pi 4 has a limit of 4 USB sound cards due to limitations in the USB bus. See [AUDIO.md](AUDIO.md). On the Raspberry Pi 3B, you can use much more USB sound cards with a suitable USB hub, see next bullet.
+* If you use a hub and it does not support Multiple Transaction Translators (MTT), streaming to approx. more then 3 audio streams will result in distortion. See [AUDIO.md](AUDIO.md). Use a hub with MTT.
+* The Raspberry Pi OS Linux kernel has a limit of 8 sound cards. You can increase this limit by compiling your own kernel. See [AUDIO.md](AUDIO.md)
 * Each audiostream uses approx 15% CPU on the Pi 3B. The 3B has 4 cores which should be enough for 20 or so transmitters but I haven't confirmed this yet. FMBerry itself hardly uses CPU.
 * For RDS, the Pi needs to send each 21,5ms data to each transmitter over the I2C bus. Not only the data needs to be send but also the I2C commands to switch the multiplexer and read the IO expander. With many transmitters, this might fully occupy the I2C bus. For more capacity, you can increase the speed of the I2C bus from 100Khz to 400Khz (see steps below) or disable RDS for some tranmitters in the .conf file.
 * The software itself has no practical limit for the number of transmitters. You need one TCA9548A per 8 transmitters and one MCP23017 per 16 transmitters. If you want to use more the 4 TCA9548A or MCP23017 IC's, increase the max in defs.h before compiling the software.
@@ -56,14 +56,18 @@ Installation
 
 Open raspi-blacklist.conf:
 
-``sudo nano /etc/modprobe.d/raspi-blacklist.conf``
+```
+sudo nano /etc/modprobe.d/raspi-blacklist.conf
+```
 
 Comment out the Line "``blacklist i2c-bcm2708``" with a #.
 Save with Ctrl+O and close nano with Ctrl+X
 
 To make sure I²C Support is loaded at boottime open /etc/modules.
 
-``sudo nano /etc/modules``
+```
+sudo nano /etc/modules
+```
 
 Add the following lines:
 
@@ -76,22 +80,30 @@ Please reboot your Raspberry after this step.
 ### Step 2: Installing I²C tools and dependencies for the build
 
 First update your local package repository with
-``sudo apt-get update``
+```
+sudo apt-get update
+```
 
 then install all needed software with the following command:
-``sudo apt-get install i2c-tools build-essential git libconfuse-dev``
+```
+sudo apt-get install i2c-tools build-essential git libconfuse-dev
+```
  
 ### Step 3: Checking the hardware
 
 You can check your wiring with the following command:
 
-``i2cdetect -y 1``
+```
+i2cdetect -y 1
+```
 
 You should then see the TCA9548A on port 0x70 and the MCP23017 on port 0x20. Check each transmitter with
 
-``i2cset 1 0x70 port``
+```
+i2cset 1 0x70 port
 
-``i2cdetect -y 1``
+i2cdetect -y 1
+```
 
 Where port is 1 (0b0000001), 2 (0b0000010), 4 (0b0000100) etc, depending on the number of transmitters and to which ports you connected the transmitters. Now also you should see the transmitter at 0x66.
 
@@ -115,9 +127,8 @@ To build the software execute the following commands (in your homefolder):
 ```
 git clone https://github.com/johanmz/FMBerry.git
 cd FMBerry
+make
 ```
-
-``make``
 
 Compiling the software will take a couple of seconds.
 
@@ -132,9 +143,14 @@ If you want to modify the file after the make/compile, edit the fmberry.conf fil
 ### Step 7: Installing the software
 FMBerry is essentially a daemon called fmberryd.
 To install it into your system path type 
-```sudo make install```. 
+```
+sudo make install
+```
 
-You can start it by typing ``sudo /etc/init.d/fmberry start``.
+You can start it by typing 
+```
+sudo /etc/init.d/fmberry start
+```
 
 To control the daemon you have to use ctlfmberry.
 
@@ -173,18 +189,41 @@ That's it! :)
 ### Step 7: Debugging
 FMBerry writes debugging output to /var/log/syslog.
 
-You can watch the information by running ``ctlfmberry log``. It's essentially just a ```cat /var/log/syslog | grep fmberryd```
+You can watch the information by running 
+```
+ctlfmberry log
+```
+It's essentially just a
+ ```
+ cat /var/log/syslog | grep fmberryd
+ ```
 
 It will tell you what's wrong. 
 
 ### Updating the software
-Please check for new dependencies. You can safely just run the ```apt-get install``` command again. It will only install new dependencies if necessary.
+Please check for new dependencies. You can safely just run the 
+```
+apt-get install
+``` 
+command again. It will only install new dependencies if necessary.
 
-First stop the daemon by typing ```/etc/init.d/fmberry stop```. 
+First stop the daemon by typing 
+```
+/etc/init.d/fmberry stop
+``` 
 
-Then run ```git pull``` followed by a ```make``` and a ```sudo make install```.
+Then run 
+```
+git pull
+make
+sudo make install
+```
 
-You can then start FMBerry again with ```/etc/init.d/fmberry start```.
+You can then start FMBerry again with 
+```
+/etc/init.d/fmberry start
+```
+
 ## Notes
 * WARNING! Tobias wrote that he is not a professional C programmer, neither am I. Please expect this software to have major security flaws. Please don't expose it's control port to the internet! I'm fairly certain that this software is vulnerable to buffer overflows. 
 * If you are a C programmer, please help by securing this software and sending a pull request. 
@@ -199,17 +238,6 @@ https://github.com/akkinitsch/FMBerryRemote (streaming of internet radio streams
 http://achilikin.blogspot.de/2013/06/sony-ericsson-mmr-70-transmitter-led.html (enabling the LED on the transmitter to be software controllable, not supported in this fork)
 
 ## Common problems
-__Not enough bandwidth error message on Raspberry Pi 4 when using more the 4 USB sound cards, cannot use more then 4 USB sound cards on the Pi 4.__
-
-This is a known limitation of the USB chipset of the Pi4. A USB hub with power delivery connected to the USB-C connector might work. See https://github.com/raspberrypi/linux/issues/3962. 
-
-__Sound is distorted when using more then three or four USB soundcards on a Pi 3__
-
-__I only the first 7 or so USB sound cards but I have more__
-
-Rasperry Pi OS kernel has a limit of 8 sound cards, you need to compile the kernel with an updated configuration. See AUDIO.md 
-
-Your hub probably has a singe transaction translator. Use a USB hub that has multiple transaction translators. Unfortunately most vendors don't specify this. A great hub with MTT is the BIG7 from UUgear.
 
 __The daemon does not show anything.__
 
@@ -241,5 +269,9 @@ device_tree_param=i2c1=on
 device_tree_param=spi=on
 ```
 
-
 Thanks to Daniel for the solution to that problem! 
+
+
+__Sound issues__
+
+See [AUDIO.md](AUDIO.md)
