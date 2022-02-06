@@ -68,7 +68,13 @@ Unfortunately in many cases this is not specified. USB Hubs that fit nicely on a
 Streaming Audio
 ---------
 
-Example: 
+Mplayer example:
+```
+mplayer -vo null -ao alsa:device=default=CARD=Device_3 $URL
+mplayer -vo null -ao alsa:device=default=CARD=Device_4 $OTHERURL
+```
+
+VLC example: 
 ```
 cvlc --http-reconnect --aout=alsa --alsa-audio-device=default:CARD=Device_1 $URL
 cvlc --http-reconnect --aout=alsa --alsa-audio-device=default:CARD=Device_2 $OTHERURL
@@ -76,6 +82,5 @@ cvlc --http-reconnect --aout=alsa --alsa-audio-device=default:CARD=Device_2 $OTH
 ```
 Where $URL and $OTHERURLis the stream of your favorite radio station
 
-Fixing ALSA device names
----------
-TODO
+Mplayer uses much less CPU then VLC, install with ``sudo apt install mplayer``
+

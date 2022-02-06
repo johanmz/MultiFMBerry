@@ -43,7 +43,7 @@ It depends:
 * The Raspberry Pi 4 has a limit of 4 USB sound cards due to limitations in the USB bus. See [AUDIO.md](AUDIO.md). On the Raspberry Pi 3B, you can use much more USB sound cards with a suitable USB hub, see next bullet.
 * If you use a hub and it does not support Multiple Transaction Translators (MTT), streaming to approx. more then 3 audio streams will result in distortion. See [AUDIO.md](AUDIO.md). Use a hub with MTT.
 * The Raspberry Pi OS Linux kernel has a limit of 8 sound cards. You can increase this limit by compiling your own kernel. See [AUDIO.md](AUDIO.md)
-* Each audiostream uses approx 15% CPU on the Pi 3B. The 3B has 4 cores which should be enough for 20 or so transmitters but I haven't confirmed this yet. FMBerry itself hardly uses CPU.
+* Each audiostream uses from 6% CPU on the Pi 3B (Mplayer) to 30% (cvlc). The 3B has 4 cores which should be enough for 20 or so transmitters but I haven't confirmed this yet. FMBerry itself hardly uses CPU.
 * For RDS, the Pi needs to send each 21,5ms data to each transmitter over the I²C bus. Not only the data needs to be send but also the I²C commands to switch the multiplexer and read the IO expander. With many transmitters, this might fully occupy the I²C bus. For more capacity, you can increase the speed of the I²C bus from 100Khz to 400Khz (see steps below) or disable RDS for some tranmitters in the .conf file.
 * The software itself has no practical limit for the number of transmitters. You need one TCA9548A per 8 transmitters and one MCP23017 per 16 transmitters. If you want to use more the 4 TCA9548A or MCP23017 IC's, increase the max in defs.h before compiling the software.
 

@@ -114,7 +114,7 @@ __Additional hardware__
 You'll need an additional TCA9548A if you want to connect more then 8 transmitters. The MCP23017 can handle 16 transmitters but for practical reasons you might also want to use a second MCP23017.
 Each MCP23017 needs to be connected to a unique suitable GPIO pin on the Raspberry Pi. 
 
-Give the additional TCA9548A and MCP23017 unique I²C adresses by connecting the A0/A1/A2 address selector lines to 3V3. 
+Give the additional TCA9548A and MCP23017 unique I²C adresses by connecting one or more A0/A1/A2 address selector lines to 3V3. 
 
 Connect the SDA and SCL lines of the additional TCA9548A and MCP23017 with the Raspberry Pi (in parallel with the existing connections).
 
