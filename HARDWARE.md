@@ -12,12 +12,10 @@ Build your setup according to the schema below. If you want to use less transmit
 
 ![Schematic](hardware/multifmberry_schema_20220206.png)
 
-__Very important!__
-
 Don't forget to disable the internal processor of the transmitter. This can be done easily by shorting on of it's crystal pins.
-To do this __connect TP18 to GND and TP2 to GND!__
+To do this connect TP18 to GND and TP2 to GND.
  
- Connect specific testpoints on the PCB of the MMR70 to the TCA9548A and MCP23017 IC's according to the schema. Also connect the 3.3V and ground.
+ Connect specific testpoints on the PCB of the MMR70 to the TCA9548A and MCP23017 IC's according to the schema. Also connect the 3.3V and GND.
 
 Thanks to Oliver J. (skriptkiddy) for the schematics and the photo with all named testpoints.
 Thanks to Andrey Chilikin for the excellent photo with all testpoints labeled.
@@ -85,9 +83,9 @@ That's it!
 
 
 
-## Common problems
+## Common hardware problems
 
-__Not working at all__
+__Transmitters cannot be heard__
 
 Check if /etc/fmberry.conf file is setup correctly. Check the IO expander section and in the Transmitter section the IO expander reference and the multiplexer port and adresses.
 
@@ -98,11 +96,21 @@ See ``Checking the transmitters`` section above.
 Check the log file with ``ctlfmberry log`` for errors.
 
 
+__The power supply of the raspberry pi shorts out/there are no lights anymore__
+
+There is a short circuit. Probably caused by a wiring fault
+
 __Transmitters work but no RDS__
 
 Make sure the connections between the transmitter and the MCP23017 are setup correct. Also make sure the MCP23017 is connected to the Raspberry Pi according to the schema.
 
+Make sure that your radio is close enough to the transmitter or connect an antenna wire to testpoint 19 of the tranmitters.
+
 Check the IO expander section in /etc/fmberry.conf and check if the IO Expander port setting in the Transmitter sections match the correct IO expander section and port.
+
+__The transmission dies after a couple of minutes__
+
+You didn't disable the internal processor of the MMR70(s). Do this by connecting TP18 to GND.
 
 ## I want to connect more then 8 transmitters
 

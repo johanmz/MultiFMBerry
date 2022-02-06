@@ -117,7 +117,7 @@ In this file you can also specify the frequency, RDS information, etc for each t
 If you want to modify the file after the make/compile, edit the fmberry.conf file in /etc.
 
 
-### Step 7: Installing the software
+### Step 6: Installing the software
 FMBerry is essentially a daemon called fmberryd.
 To install it into your system path type 
 ```
@@ -214,7 +214,7 @@ https://github.com/Manawyrm/FMBerryRDSMPD (streaming of MPD title data via RDS)
 https://github.com/akkinitsch/FMBerryRemote (streaming of internet radio streams, controllable via Webinterface)
 http://achilikin.blogspot.de/2013/06/sony-ericsson-mmr-70-transmitter-led.html (enabling the LED on the transmitter to be software controllable, not supported in this fork)
 
-## Common problems
+## Common software problems
 
 __The daemon does not show anything.__
 
@@ -228,25 +228,10 @@ __I am getting compile errors.__
 
 Did you install all dependencies? (All lines with apt-get)
 
-__The transmission dies after a couple of minutes.__
 
-You didn't disable the internal processor of the MMR70. Do this by connecting TP18 to GND.
+__Hardware issues__
 
-__The power supply of the raspberry pi shorts out/there are no lights anymore___
-
-There is a short circuit. Probably caused by a wiring fault or by using an 80pin IDE cable for connecting the FMBerry.
-
-
-__Alternative linux distributions don't detect the I2C bus (ArchLinux, OpenWRT, OSMC)__
-
-Linux 3.18 introduced a new feature called Device Tree support. To get the I²C Bus working, you need to put this configuration at the end of /boot/config.txt (change the first parameter according to the RPi you have): 
-```
-device_tree=bcm2708-rpi-b-plus.dtb
-device_tree_param=i2c1=on
-device_tree_param=spi=on
-```
-
-Thanks to Daniel for the solution to that problem! 
+See [HARDWARE.md](HARDWARE.md)
 
 
 __Sound issues__
