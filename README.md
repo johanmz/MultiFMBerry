@@ -20,7 +20,7 @@ You can get these still for cheap from Ebay in 2022.
 Why does it need additional IC's apart from the MRR70's?
 -------------
 
-Since all transmitters  use the same I2C address (0x66), one ore more multiplexers (TCA9548A) are used to switch the transmitters before sending commands and RDS updates to the transmitters. Each TCA9548A has 8 I2C ports so it can handle 8 transmitters. One or more IO expanders (MCP23017) are used to read the RDS interrupt signals, this is the signal that the transmitter needs the next RDS block. Each MCP23017 can handle up to 16 transmitters. 
+Since all transmitters  use the same I²C address (0x66), one ore more multiplexers (TCA9548A) are used to switch the transmitters before sending commands and RDS updates to the transmitters. Each TCA9548A has 8 I²C ports so it can handle 8 transmitters. One or more IO expanders (MCP23017) are used to read the RDS interrupt signals, this is the signal that the transmitter needs the next RDS block. Each MCP23017 can handle up to 16 transmitters. 
 
 
 What do I need to build this? 
@@ -34,7 +34,7 @@ What do I need to build this?
 
 
 The hardware is explained here:
-[HARDWARE.md](https://github.com/Manawyrm/FMBerry/blob/master/HARDWARE.md#fmberry---hardware)
+[HARDWARE.md](HARDWARE.md)
 
 How many transmitters and audio streams can one Pi control?
 ------------
@@ -44,7 +44,7 @@ It depends:
 * If you use a hub and it does not support Multiple Transaction Translators (MTT), streaming to approx. more then 3 audio streams will result in distortion. See [AUDIO.md](AUDIO.md). Use a hub with MTT.
 * The Raspberry Pi OS Linux kernel has a limit of 8 sound cards. You can increase this limit by compiling your own kernel. See [AUDIO.md](AUDIO.md)
 * Each audiostream uses approx 15% CPU on the Pi 3B. The 3B has 4 cores which should be enough for 20 or so transmitters but I haven't confirmed this yet. FMBerry itself hardly uses CPU.
-* For RDS, the Pi needs to send each 21,5ms data to each transmitter over the I2C bus. Not only the data needs to be send but also the I2C commands to switch the multiplexer and read the IO expander. With many transmitters, this might fully occupy the I2C bus. For more capacity, you can increase the speed of the I2C bus from 100Khz to 400Khz (see steps below) or disable RDS for some tranmitters in the .conf file.
+* For RDS, the Pi needs to send each 21,5ms data to each transmitter over the I²C bus. Not only the data needs to be send but also the I²C commands to switch the multiplexer and read the IO expander. With many transmitters, this might fully occupy the I²C bus. For more capacity, you can increase the speed of the I²C bus from 100Khz to 400Khz (see steps below) or disable RDS for some tranmitters in the .conf file.
 * The software itself has no practical limit for the number of transmitters. You need one TCA9548A per 8 transmitters and one MCP23017 per 16 transmitters. If you want to use more the 4 TCA9548A or MCP23017 IC's, increase the max in defs.h before compiling the software.
 
 This software has been tested succesfully with 8 transmitters on a Raspbery Pi 3B with 8 USB sound cards using a BIG7 UUgear USB hub, I plan to test with more transmitters.
@@ -88,40 +88,17 @@ then install all needed software with the following command:
 ```
 sudo apt-get install i2c-tools build-essential git libconfuse-dev
 ```
- 
-### Step 3: Checking the hardware
 
-You can check your wiring with the following command:
 
-```
-i2cdetect -y 1
-```
+### Step 3: Speeding up the I²C bus
 
-You should then see the TCA9548A on port 0x70 and the MCP23017 on port 0x20. Check each transmitter with
-
-```
-i2cset 1 0x70 port
-
-i2cdetect -y 1
-```
-
-Where port is 1 (0b0000001), 2 (0b0000010), 4 (0b0000100) etc, depending on the number of transmitters and to which ports you connected the transmitters. Now also you should see the transmitter at 0x66.
-
-If you are not able to see your transmitter please double check your wiring!
-
-If you connect you MMR-70 to I²C bus 0 on Raspberry Pi rev2 make sure that header P5 pins are configured as [I²C pins](http://www.raspberrypi.org/phpBB3/viewtopic.php?p=355638#p355638)!
-
-![Output of i2cdetect](http://tbspace.de/holz/csuqzygpwb.png)
-
-### Step 4: Speeding up the I2C bus
-
-For RDS, every transmitter needs to receive data each 21,5ms over the I2C bus. Also, the I2C messages for the multiplexer and IO expander need to be send and received.  With more then 10 transmitters or so, the I2C bus speed should be increased to 400 KHz. 
+For RDS, every transmitter needs to receive data each 21,5ms over the I²C bus. Also, the I²C messages for the multiplexer and IO expander need to be send and received.  With more then 10 transmitters or so, the I²C bus speed should be increased to 400 KHz. 
 ```
 sudo nano /boot/config.txt
 ```
 Find the line ``dtparam=i2c`` and change it to ``dtparam=i2c_arm=on,i2c_arm_baudrate=400000``. Save and reboot.
 
-### Step 5: Building the software
+### Step 4: Building the software
 To build the software execute the following commands (in your homefolder):
 
 ```
@@ -132,7 +109,7 @@ make
 
 Compiling the software will take a couple of seconds.
 
-### Step 6: Specify your hardware in the config file
+### Step 5: Specify your hardware in the config file
 FMBerry needs to know about the MCP23017 IO expander, TCA9548A multiplexer, how many tranmitters you have and to which TCA9548A and MCP23017 port each transmitter is connected. Specify this in the .conf file. 
 
 In this file you can also specify the frequency, RDS information, etc for each transmitter.
