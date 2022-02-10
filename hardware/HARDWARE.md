@@ -10,7 +10,7 @@ The following components are needed:
 Build your setup according to the schema below. If you want to use less transmitters, simply omit them.
 
 
-![Schematic](hardware/multifmberry_schema_20220206.png)
+![Schematic](multifmberry_schema_20220206.png)
 
 Don't forget to disable the internal processor of the transmitter. This can be done easily by shorting on of it's crystal pins.
 To do this connect TP18 to GND and TP2 to GND.

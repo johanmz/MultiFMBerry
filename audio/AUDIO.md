@@ -69,7 +69,7 @@ Unfortunately in many cases this is not specified. USB Hubs that fit nicely on a
 With the help of UDEV rules, fixed ALSA card names can be assigned to USB ports. This prevents mingling your audio streams after reboots or plugging in/out USB sound cards.
 
 ### Step 1
-First, check the device path for each of your USB sound cards by running the command below and then plugging in your USB devices one by one. Copy each device path to a text editor, you'll need that in the next step.
+First, check the device path (DEVPATH) for each of your USB sound cards by running the command below and then plugging in your USB devices one by one. Copy the value of each device path to a text editor, you'll need that in the next step.
 
 ```
 pi@multifmberry:~ $ udevadm monitor --kernel --property --subsystem-match=sound
