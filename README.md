@@ -26,23 +26,23 @@ Since all transmitters  use the same I²C address (0x66), one ore more multiplex
 What do I need to build this? 
 -------------
 * MMR-70 transmitter, two or more. If you want to control only one transmitter, it makes more sense to use the software and hardware setup from Tobias since it doesn't need the additional IC's.
-* Raspberry Pi (tested with 3B and 4 but see the limitations of the Pi4 in [AUDIO.md](AUDIO.md) before you start!)
+* Raspberry Pi (tested with 3B and 4 but see the limitations of the Pi4 in [AUDIO.md](audio/AUDIO.md) before you start!)
 * TCA9548A, MCP23017 and AMS1117 breakout board(s) from AliExpress or Ebay
 * Soldering equipment (soldering iron and some solder)
 * USB sound card for each transmitter, the cheap "3D Sound" USB sound sticks from AliExpress work fine.
-* One or more USB hubs if you have more then 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](AUDIO.md).
+* One or more USB hubs if you have more then 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](audio/AUDIO.md).
 
 
 The hardware is explained here:
-[HARDWARE.md](HARDWARE.md)
+[HARDWARE.md](hardware/HARDWARE.md)
 
 How many transmitters and audio streams can one Pi control?
 ------------
 It depends:
 
-* The Raspberry Pi 4 has a limit of 4 USB sound cards due to limitations in the USB bus. See [AUDIO.md](AUDIO.md). On the Raspberry Pi 3B, you can use much more USB sound cards with a suitable USB hub, see next bullet.
-* If you use a hub and it does not support Multiple Transaction Translators (MTT), streaming to approx. more then 3 audio streams will result in distortion. See [AUDIO.md](AUDIO.md). Use a hub with MTT.
-* The Raspberry Pi OS Linux kernel has a limit of 8 sound cards. You can increase this limit by compiling your own kernel. See [AUDIO.md](AUDIO.md)
+* The Raspberry Pi 4 has a limit of 4 USB sound cards due to limitations in the USB bus. See [AUDIO.md](audio/AUDIO.md). On the Raspberry Pi 3B, you can use much more USB sound cards with a suitable USB hub, see next bullet.
+* If you use a hub and it does not support Multiple Transaction Translators (MTT), streaming to approx. more then 3 audio streams will result in distortion. See [AUDIO.md](audio/AUDIO.md). Use a hub with MTT.
+* The Raspberry Pi OS Linux kernel has a limit of 8 sound cards. You can increase this limit by compiling your own kernel. See [AUDIO.md](audio/AUDIO.md)
 * For RDS, the Pi needs to send each 21,5ms data to each transmitter over the I²C bus. Not only the data needs to be send but also the I²C commands to switch the multiplexer and read the IO expander. With many transmitters, this might fully occupy the I²C bus. For more capacity, you can increase the speed of the I²C bus from 100Khz to 400Khz (see steps below) or disable RDS for some tranmitters in the .conf file.
 * Each audiostream uses about 5% CPU. The 3B has 4 cores which should be enough for many streams. FMBerry itself does not use much CPU either.
 * The software itself has no practical limit for the number of transmitters. You need one TCA9548A per 8 transmitters and one MCP23017 per 16 transmitters. If you want to use more the 4 TCA9548A or MCP23017 IC's, increase the max in defs.h before compiling the software.
@@ -151,7 +151,8 @@ It currently allows the following commands:
 * ``ctlfmberry <tr> gainoff`` - Audio gain 0dB"
 * ``ctlfmberry <tr> set volume 0-6`` Audio volume level 0 to 6, equal -9dB to +9db, 3dB step
 * ``ctlfmberry <tr> status`` - Print current status
-* ``ctlfmberry <tr> stop`` - Stop FMBerry daemon
+* ``ctlfmberry all stop`` - Stop FMBerry daemon
+* ``ctlfmberry log`` - show logfile for FMBerry
 
 ``<tr>``: specify one or more transmitters (as named in the .conf file) or ``all`` for all transmitters. 
 Examples: 
@@ -211,8 +212,10 @@ You can then start FMBerry again with
 ## Projects using FMBerry
 
 https://github.com/Manawyrm/FMBerryRDSMPD (streaming of MPD title data via RDS)
+
 https://github.com/akkinitsch/FMBerryRemote (streaming of internet radio streams, controllable via Webinterface)
-http://achilikin.blogspot.de/2013/06/sony-ericsson-mmr-70-transmitter-led.html (enabling the LED on the transmitter to be software controllable, not supported in this fork)
+
+http://achilikin.blogspot.de/2013/06/sony-ericsson-mmr-70-transmitter-led.html (enabling the LED on the transmitter to be software controllable, not supported in this fork but interesting information about the MRR70 can be found there)
 
 ## Common software problems
 
@@ -231,9 +234,9 @@ Did you install all dependencies? (All lines with apt-get)
 
 __Hardware issues__
 
-See [HARDWARE.md](HARDWARE.md)
+See [HARDWARE.md](hardware/HARDWARE.md)
 
 
 __Sound issues__
 
-See [AUDIO.md](AUDIO.md)
+See [AUDIO.md](audio/AUDIO.md)
