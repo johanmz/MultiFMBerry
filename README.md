@@ -20,7 +20,7 @@ You can get these still for cheap from Ebay in 2022.
 Why does it need additional IC's apart from the MRR70's?
 -------------
 
-Since all transmitters  use the same I²C address (0x66), one ore more multiplexers (TCA9548A) are used to switch the transmitters before sending commands and RDS updates to the transmitters. Each TCA9548A has 8 I²C ports so it can handle 8 transmitters. One or more IO expanders (MCP23017) are used to read the RDS interrupt signals, this is the signal that the transmitter needs the next RDS block. Each MCP23017 can handle up to 16 transmitters. 
+Since all transmitters  use the same I²C address (0x66), one or more multiplexers (TCA9548A) are used to switch the transmitters before sending commands and RDS updates to the transmitters. Each TCA9548A has 8 I²C ports so it can handle 8 transmitters. One or more IO expanders (MCP23017) are used to read the RDS interrupt signals, this is the signal that the transmitter needs the next RDS block. Each MCP23017 can handle up to 16 transmitters. 
 
 
 What do I need to build this? 
@@ -28,7 +28,9 @@ What do I need to build this?
 * MMR-70 transmitter, two or more. If you want to control only one transmitter, it makes more sense to use the software and hardware setup from Tobias since it doesn't need the additional IC's.
 * Raspberry Pi (tested with 3B and 4B but see the limitations of the Pi4 in [AUDIO.md](audio/AUDIO.md) before you start!)
 * TCA9548A, MCP23017 and AMS1117 breakout board(s) from AliExpress or Ebay
-* Soldering equipment (soldering iron and some solder)
+* Soldering equipment (soldering iron and some solder). Soldering skills.
+* Thin wire to connect the transmitter boards to the TCA9548A and MCP23017 IC's, Dupont line cable (male to female) for the connection to the PI's GPIO connector.
+* PCB prototype board (8 x 12 cm is fine, you can also mount the transmitters upright on the board) 
 * USB sound card for each transmitter, the cheap "3D Sound" USB sound sticks from AliExpress work fine.
 * One or more USB hubs if you have more than 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](audio/AUDIO.md).
 
@@ -137,19 +139,19 @@ It currently allows the following commands:
 * ``ctlfmberry <tr> poweroff``
 * ``ctlfmberry <tr> set rdsid DEADBEEF`` (8 chars! Longer strings will be truncated, shorter - padded with spaces)
 * ``ctlfmberry <tr> set rdstext Mike Oldfield - Pictures in the Dark`` (max. 64 chars. Longer strings will be truncated)
-* `` ctlfmberry <tr> set rdspi 0x7000`` - RDS PI between 0x0000 and 0xFFFF. Avoid locally used PI codes
-* `` ctlfmberry <tr> set rdspty 10`` - RDS program type between 0 and 31
+* ``ctlfmberry <tr> set rdspi 0x7000`` - RDS PI between 0x0000 and 0xFFFF. Avoid locally used PI codes
+* ``ctlfmberry <tr> set rdspty 10`` - RDS program type between 0 and 31
 * ``ctlfmberry <tr> set txpwr 0`` - 0.5 mW Outputpower
 * ``ctlfmberry <tr> set txpwr 1`` - 0.8 mW Outputpower
 * ``ctlfmberry <tr> set txpwr 2`` - 1.0 mW Outputpower
-* ``ctlfmberry <tr> set txpwr 3`` - 2.0 mW Outputpower (Default.)
-* ``ctlfmberry <tr> stereo on`` - Enables stereo signal (Default)
+* ``ctlfmberry <tr> set txpwr 3`` - 2.0 mW Outputpower (default)
+* ``ctlfmberry <tr> stereo on`` - Enables stereo signal (default)
 * ``ctlfmberry <tr> stereo off`` - Disables stereo signal
-* ``ctlfmberry <tr> muteon`` - Mute audio
+* ``ctlfmberry <tr> muteon`` - Mute audio (and 19KHz pilot signal and 38 KHz RDS sub-carrier)
 * ``ctlfmberry <tr> muteoff`` - Unmute audio
 * ``ctlfmberry <tr> gainlow`` - Audio gain -9dB
-* ``ctlfmberry <tr> gainoff`` - Audio gain 0dB"
-* ``ctlfmberry <tr> set volume 0-6`` Audio volume level 0 to 6, equal -9dB to +9db, 3dB step
+* ``ctlfmberry <tr> gainoff`` - Audio gain 0dB
+* ``ctlfmberry <tr> set volume 0-6`` - Audio volume level 0 to 6, equal -9dB to +9db, 3dB step
 * ``ctlfmberry <tr> status`` - Print current status
 * ``ctlfmberry all stop`` - Stop FMBerry daemon
 * ``ctlfmberry log`` - show logfile for FMBerry

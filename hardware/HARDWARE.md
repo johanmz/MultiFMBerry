@@ -74,8 +74,7 @@ This way you can check all transmitters. Note that you have to send the bit corr
 
 ## Setup fmberry.conf
 
-The software needs to know about your hardware setup. Modify fmberry.conf according to your needs. The sample file matches the setup above.
-For less than 8 transmitters, simpy delete the corresponding transmitter sections from the fmberry.conf file.
+The software needs to know about your hardware setup. Modify fmberry.conf according to your needs. The sample config file matches the 8 transmitter setup of the schematic above. For less than 8 transmitters, simpy delete the corresponding transmitter sections from the fmberry.conf file.
 
 The config file can be found (after the make install) in /etc/fmberry.conf
 
@@ -112,7 +111,7 @@ __RDS incorrect, letters missing__
 
 Make sure that your radio is close enough to the transmitter or connect an antenna wire to test point 19 of the transmitters. Also, the PI and additional IC's can generate so much RF that the reception is affected.
 
-If you have a large number of transmitters (more than 10-15 or so), the I²C bus might be fully occupied. Increase the I²C rate from 100Khz to 400Khz, see [README.md](README.md).
+If you have a large number of transmitters (more than 10-15 or so), the I²C bus might be fully occupied. Increase the I²C rate from 100Khz to 400Khz, see [README.md](../README.md).
 
 __The transmission dies after a couple of minutes__
 
