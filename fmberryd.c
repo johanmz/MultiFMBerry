@@ -489,7 +489,8 @@ int ProcessTCP(int sock)
 		do {
 			if (full_buffer[f] != ',' && full_buffer[f] != ' ')
 				transmittername[t++]=full_buffer[f];
-			else {
+			
+			if (t) {
 				for (int k=0; k<nr_transmitters;k++) {
 					if (strcmp(mmr70[k].name, transmittername) == 0) {
 						do_fortransmitter[k]=1;
@@ -500,8 +501,8 @@ int ProcessTCP(int sock)
 					}
 				}
 			}
-			f++;
-			if (full_buffer[f] == ' ' || full_buffer[f] == 0)
+		f++;
+		if (full_buffer[f] == ' ' || full_buffer[f] == 0)
 				break;
 		} while (1);
 	} 
@@ -521,10 +522,12 @@ int ProcessTCP(int sock)
 			const char *arg;
 
 			if (do_fortransmitter[transmitter]) {
+
 				if (str_is_arg(arg_buffer, "set freq", &arg))
 				{
 					int frequency = atoi(arg);
-
+					
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					if ((frequency >= 76000) && (frequency <= 108000))
 					{
 						syslog(LOG_NOTICE, "Changing frequency...\n");
@@ -540,6 +543,7 @@ int ProcessTCP(int sock)
 
 				if (str_is(arg_buffer, "poweroff"))
 				{
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					ns741_power(transmitter,0);
 					mmr70[transmitter].power = 0;
 					break;
@@ -547,6 +551,7 @@ int ProcessTCP(int sock)
 
 				if (str_is(arg_buffer, "poweron"))
 				{
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					ns741_power(transmitter,1);
 					ns741_rds(transmitter,1);
 					ns741_rds_reset_radiotext(transmitter);
@@ -556,6 +561,7 @@ int ProcessTCP(int sock)
 
 				if (str_is(arg_buffer, "muteon"))
 				{
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					ns741_mute(transmitter,1);
 					mmr70[transmitter].mute = 1;
 					break;
@@ -563,6 +569,7 @@ int ProcessTCP(int sock)
 
 				if (str_is(arg_buffer, "muteoff"))
 				{
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					ns741_mute(transmitter, 0);
 					mmr70[transmitter].mute = 0;
 					break;
@@ -570,6 +577,7 @@ int ProcessTCP(int sock)
 
 				if (str_is(arg_buffer, "gainlow"))
 				{
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					ns741_input_gain(transmitter,1);
 					mmr70[transmitter].gain = 1;
 					break;
@@ -577,6 +585,7 @@ int ProcessTCP(int sock)
 
 				if (str_is(arg_buffer, "gainoff"))
 				{
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					ns741_input_gain(transmitter,0);
 					mmr70[transmitter].gain = 0;
 					break;
@@ -586,6 +595,7 @@ int ProcessTCP(int sock)
 				{
 					int volume = atoi(arg);
 
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					if ((volume >= 0) && (volume <= 6))
 					{
 						syslog(LOG_NOTICE, "Changing volume level...\n");
@@ -601,6 +611,7 @@ int ProcessTCP(int sock)
 
 				if (str_is_arg(arg_buffer, "set stereo", &arg))
 				{
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					if (str_is(arg, "on"))
 					{
 						syslog(LOG_NOTICE, "Enabling stereo signal...\n");
@@ -621,6 +632,7 @@ int ProcessTCP(int sock)
 				{
 					int txpwr = atoi(arg);
 
+					tca9548a_select_port(mmr70[transmitter].i2c_mplexindex, mmr70[transmitter].i2c_mplexport);
 					if ((txpwr >= 0) && (txpwr <= 3))
 					{
 						syslog(LOG_NOTICE, "Changing transmit power...\n");

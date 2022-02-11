@@ -26,11 +26,11 @@ Since all transmitters  use the same I²C address (0x66), one ore more multiplex
 What do I need to build this? 
 -------------
 * MMR-70 transmitter, two or more. If you want to control only one transmitter, it makes more sense to use the software and hardware setup from Tobias since it doesn't need the additional IC's.
-* Raspberry Pi (tested with 3B and 4 but see the limitations of the Pi4 in [AUDIO.md](audio/AUDIO.md) before you start!)
+* Raspberry Pi (tested with 3B and 4B but see the limitations of the Pi4 in [AUDIO.md](audio/AUDIO.md) before you start!)
 * TCA9548A, MCP23017 and AMS1117 breakout board(s) from AliExpress or Ebay
 * Soldering equipment (soldering iron and some solder)
 * USB sound card for each transmitter, the cheap "3D Sound" USB sound sticks from AliExpress work fine.
-* One or more USB hubs if you have more then 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](audio/AUDIO.md).
+* One or more USB hubs if you have more than 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](audio/AUDIO.md).
 
 
 The hardware is explained here:
@@ -40,14 +40,14 @@ How many transmitters and audio streams can one Pi control?
 ------------
 It depends:
 
-* The Raspberry Pi 4 has a limit of 4 USB sound cards due to limitations in the USB bus. See [AUDIO.md](audio/AUDIO.md). On the Raspberry Pi 3B, you can use much more USB sound cards with a suitable USB hub, see next bullet.
-* If you use a hub and it does not support Multiple Transaction Translators (MTT), streaming to approx. more then 3 audio streams will result in distortion. See [AUDIO.md](audio/AUDIO.md). Use a hub with MTT.
+* The Raspberry Pi 4 has a limit of 4 USB sound cards due to limitations of the USB chipset. See [AUDIO.md](audio/AUDIO.md) for the issue and possible workarounds. On the Raspberry Pi 3B, you can use many more USB sound cards with a suitable USB hub, see next bullet.
+* If you use a hub that does not support Multiple Transaction Translators (MTT), streaming to approx. more than 3 audio streams will result in severe distortion of the sound. See [AUDIO.md](audio/AUDIO.md). Use a hub with MTT.
 * The Raspberry Pi OS Linux kernel has a limit of 8 sound cards. You can increase this limit by compiling your own kernel. See [AUDIO.md](audio/AUDIO.md)
-* For RDS, the Pi needs to send each 21,5ms data to each transmitter over the I²C bus. Not only the data needs to be send but also the I²C commands to switch the multiplexer and read the IO expander. With many transmitters, this might fully occupy the I²C bus. For more capacity, you can increase the speed of the I²C bus from 100Khz to 400Khz (see steps below) or disable RDS for some tranmitters in the .conf file.
-* Each audiostream uses about 5% CPU. The 3B has 4 cores which should be enough for many streams. FMBerry itself does not use much CPU either.
+* For RDS, the Pi (``fmberryd``) needs to send each 21,5ms data to each transmitter over the I²C bus. Not only the data needs to be sent but also the I²C commands to switch the multiplexer and read the IO expander. With many transmitters this will fully occupy the I²C bus, resulting in RDS display issues on the receiver. For more capacity, you can increase the speed of the I²C bus from 100Khz to 400Khz (see steps below) or disable RDS for some transmitters in the .conf file.
+* Each audiostream uses about 5%-10% CPU. The Pi 3B has 4 cores which should be enough for many streams. FMBerry itself does not use much CPU either.
 * The software itself has no practical limit for the number of transmitters. You need one TCA9548A per 8 transmitters and one MCP23017 per 16 transmitters. If you want to use more the 4 TCA9548A or MCP23017 IC's, increase the max in defs.h before compiling the software.
 
-This software has been tested succesfully with 8 transmitters on a Raspbery Pi 3B with 8 USB sound cards using a BIG7 UUgear USB hub, I plan to test with more transmitters.
+This software has been tested successfully with 8 transmitters on a Raspberry Pi 3B with 8 USB sound cards using a BIG7 UUgear USB hub, I plan to test with more transmitters. I've also done some limited but successful tests on a Pi 4B but moved to a Pi 3B when I discovered the USB sound card limit on the 4B described above.
 
 Installation
 -------------
@@ -92,7 +92,7 @@ sudo apt-get install i2c-tools build-essential git libconfuse-dev
 
 ### Step 3: Speeding up the I²C bus
 
-For RDS, every transmitter needs to receive data each 21,5ms over the I²C bus. Also, the I²C messages for the multiplexer and IO expander need to be send and received.  With more then 10 transmitters or so, the I²C bus speed should be increased to 400 KHz. 
+For RDS, every transmitter needs to receive data each 21,5ms over the I²C bus. Also, the I²C messages for the multiplexer and IO expander need to be send and received.  With more than 10 transmitters or so, the I²C bus speed should be increased to 400 KHz. 
 ```
 sudo nano /boot/config.txt
 ```
@@ -110,7 +110,7 @@ make
 Compiling the software will take a couple of seconds.
 
 ### Step 5: Specify your hardware in the config file
-FMBerry needs to know about the MCP23017 IO expander, TCA9548A multiplexer, how many tranmitters you have and to which TCA9548A and MCP23017 port each transmitter is connected. Specify this in the .conf file. 
+FMBerry needs to know about the MCP23017 IO expander, TCA9548A multiplexer, how many transmitters you have and to which TCA9548A and MCP23017 port each transmitter is connected. Specify this in the .conf file. 
 
 In this file you can also specify the frequency, RDS information, etc for each transmitter.
 
@@ -137,7 +137,7 @@ It currently allows the following commands:
 * ``ctlfmberry <tr> poweroff``
 * ``ctlfmberry <tr> set rdsid DEADBEEF`` (8 chars! Longer strings will be truncated, shorter - padded with spaces)
 * ``ctlfmberry <tr> set rdstext Mike Oldfield - Pictures in the Dark`` (max. 64 chars. Longer strings will be truncated)
-* `` ctlfmberry <tr> set rdspi 0x7000`` - RDS PI between 0x0000 and 0xFFF`` Avoid locally used PI codes
+* `` ctlfmberry <tr> set rdspi 0x7000`` - RDS PI between 0x0000 and 0xFFFF. Avoid locally used PI codes
 * `` ctlfmberry <tr> set rdspty 10`` - RDS program type between 0 and 31
 * ``ctlfmberry <tr> set txpwr 0`` - 0.5 mW Outputpower
 * ``ctlfmberry <tr> set txpwr 1`` - 0.8 mW Outputpower
@@ -211,7 +211,7 @@ You can then start FMBerry again with
 
 ## Projects using FMBerry
 
-https://github.com/Manawyrm/FMBerryRDSMPD (streaming of MPD title data via RDS)
+https://github.com/Manawyrm/FMBerryRDSMPD (streaming of MPD title data via RDS, needs mods to work with MultiFMBerry)
 
 https://github.com/akkinitsch/FMBerryRemote (streaming of internet radio streams, controllable via Webinterface)
 
