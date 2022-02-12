@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <syslog.h>
 
 #include "rpi_pin.h"
 
@@ -227,6 +228,8 @@ int rpi_pin_poll_enable(uint8_t pin, enum PIN_EDGE_MODE mode)
 	sprintf(file, "/sys/class/gpio/gpio%d/edge", pin);
 	if ((fd = fopen (file, "w")) == NULL) {
 		_IFDEB(fprintf(stderr, "%s: setting edge detection failed for pin #%u: %s\n", __func__, pin));
+		syslog(LOG_ERR, "setting edge detection failed for pin #%u Run fmberry as root", pin);
+		perror ("setting edge detection failed, see log");
 		return -1;
 	}
 

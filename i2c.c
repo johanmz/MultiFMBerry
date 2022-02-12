@@ -16,13 +16,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "i2c.h"
-
+// #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <alloca.h>
 #include <memory.h>
 #include <linux/i2c-dev.h>
+#include <sys/ioctl.h>
 
 int i2c_init(uint8_t bus, uint8_t address)
 {
