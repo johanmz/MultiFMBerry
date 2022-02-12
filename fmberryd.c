@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 		ns741_volume(j, mmr70[j].volume);
 	}
 
-	ns741_rds_debug(1);
+	// ns741_rds_debug(1);
 	// Use RPI_REV1 for earlier versions of Raspberry Pi
 	rpi_pin_init(RPI_REVISION);
 
@@ -701,7 +701,7 @@ int ProcessTCP(int sock)
 				{
 					char status_buffer[256];
 					bzero(status_buffer, sizeof(status_buffer));
-					sprintf(status_buffer, "\033[0;36mtransmitter: %d\033[0;0m transmittername: %s freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdspi: 0x%04X rdspty: %d rdsid: '%s' rdstext: '%s'\n",
+					sprintf(status_buffer, "\033[0;36m\x23%d name: %s\033[0;0m freq: %dKHz txpwr: %.2fmW power: '%s' mute: '%s' gain: '%s' volume: '%d' stereo: '%s' rds: '%s' rdspi: 0x%04X rdspty: %d rdsid: '%s' rdstext: '%s'\n",
 						transmitter,
 						mmr70[transmitter].name,
 						mmr70[transmitter].frequency,

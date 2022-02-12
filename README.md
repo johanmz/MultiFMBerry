@@ -35,7 +35,7 @@ What do I need to build this?
 * One or more USB hubs if you have more than 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](audio/AUDIO.md).
 
 The hardware is explained here:
-[HARDWARE.md](hardware/HARDWARE.md). This is my prototype with 8 transmitters:
+[HARDWARE.md](hardware/HARDWARE.md). This is my prototype with 8 MMR70 transmitters:
 
 ![MultiFMBerry board](hardware/multifmberry_board_small.jpg)
 
@@ -50,7 +50,7 @@ It depends:
 * Each audiostream uses about 5%-10% CPU. The Pi 3B has 4 cores which should be enough for many streams. FMBerry itself does not use much CPU either.
 * The software itself has no practical limit for the number of transmitters. You need one TCA9548A per 8 transmitters and one MCP23017 per 16 transmitters. If you want to use more the 4 TCA9548A or MCP23017 IC's, increase the max in defs.h before compiling the software.
 
-This software has been tested successfully with 8 transmitters on a Raspberry Pi 3B with 8 USB sound cards using a BIG7 UUgear USB hub, I plan to test with more transmitters. I've also done some limited but successful tests on a Pi 4B but moved to a Pi 3B when I discovered the USB sound card limit on the 4B described above.
+This software has been tested successfully with 8 transmitters on a Raspberry Pi 3B with 8 USB sound cards using a BIG7 UUgear USB hub, I plan to test with more transmitters. I've also done some limited but successful tests on a Pi 4B but switched to a Pi 3B when I found out about the USB sound card limit on the 4B.
 
 Installation
 -------------
@@ -105,8 +105,8 @@ Find the line ``dtparam=i2c`` and change it to ``dtparam=i2c_arm=on,i2c_arm_baud
 To build the software execute the following commands (in your homefolder):
 
 ```
-git clone https://github.com/johanmz/FMBerry.git
-cd FMBerry
+git clone https://github.com/johanmz/MultiFMBerry.git
+cd MultiFMBerry
 make
 ```
 
@@ -157,7 +157,8 @@ It currently allows the following commands:
 * ``ctlfmberry all stop`` - Stop FMBerry daemon
 * ``ctlfmberry log`` - show logfile for FMBerry
 
-``<tr>``: specify one or more transmitters (as named in the .conf file) or ``all`` for all transmitters. 
+``<tr>``: specify one or more transmitters or ``all`` for all transmitters.  Use names as specified in the fmberry.conf file, behind the 'transmitter' section header. 
+
 Examples: 
 
 ``ctlfmberry 0,1 muteon`` 
@@ -165,6 +166,8 @@ Examples:
 ``ctlfmberry 1 gainlow``
 
 ``ctlfmberry all muteoff``
+
+Transmitter names are also shown in the status overview, run ``ctlfmberry all status``.
        
 That's it! :)
 ### Step 7: Debugging
@@ -210,15 +213,6 @@ You can then start FMBerry again with
 * If you are a C programmer, please help by securing this software and sending a pull request. 
 * The Daemon itself is essentially a simple TCP server. It is listening to Port 42516. (set in fmberry.conf) You can control it by sending the exact same commands you would give to ctlfmberry.
 * For information on How to control the Daemon have a look into ctlfmberry. It's a simple shell script.
-
-
-## Projects using FMBerry
-
-https://github.com/Manawyrm/FMBerryRDSMPD (streaming of MPD title data via RDS, needs mods to work with MultiFMBerry)
-
-https://github.com/akkinitsch/FMBerryRemote (streaming of internet radio streams, controllable via Webinterface)
-
-http://achilikin.blogspot.de/2013/06/sony-ericsson-mmr-70-transmitter-led.html (enabling the LED on the transmitter to be software controllable, not supported in this fork but interesting information about the MRR70 can be found there)
 
 ## Common software problems
 
