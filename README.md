@@ -34,9 +34,10 @@ What do I need to build this?
 * USB sound card for each transmitter, the cheap "3D Sound" USB sound sticks from AliExpress work fine.
 * One or more USB hubs if you have more than 4 transmitters. You need a hub with Multiple Transaction Translators (MTT). The BIG7 from UUgear and the Waveshare USB3.2 HAT (5 port) work fine and have the same form factor as the Pi as a bonus. See also [AUDIO.md](audio/AUDIO.md).
 
-
 The hardware is explained here:
-[HARDWARE.md](hardware/HARDWARE.md)
+[HARDWARE.md](hardware/HARDWARE.md). This is my prototype with 8 transmitters:
+
+![MultiFMBerry board](hardware/multifmberry_board_small.jpg)
 
 How many transmitters and audio streams can one Pi control?
 ------------
